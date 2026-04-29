@@ -2,6 +2,9 @@
   "name": "tiny-fight-club",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "balance:sim": "node scripts/balance-sim.mjs"
+  },
   "engines": {
     "node": "20.x"
   },
