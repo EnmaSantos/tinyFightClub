@@ -1,6 +1,6 @@
 export const baseBalls = [
     { name: 'Dash',    color: '#06b6d4', ability: 'Dash',    hp: 100, maxHp: 100, r: 56, mass: 1,   speed: 5,   damage: 10, desc: 'High speed, dashes forward to strike.' },
-    { name: 'Titan',   color: '#94a3b8', ability: 'Heavy',   hp: 200, maxHp: 200, r: 88, mass: 3,   speed: 2,   damage: 18, desc: 'Massive, high HP, turns slowly.' },
+    { name: 'Titan',   color: '#94a3b8', ability: 'Heavy',   hp: 170, maxHp: 170, r: 88, mass: 3,   speed: 2,   damage: 18, desc: 'Massive, high HP, turns slowly.' },
     { name: 'Dracula', color: '#ef4444', ability: 'Vampire', hp: 120, maxHp: 120, r: 61, mass: 1.2, speed: 3.5, damage: 12, desc: 'Heals 50% of damage dealt by its weapon.' },
     { name: 'Ninja',   color: '#71717a', ability: 'Teleport',hp: 90,  maxHp: 90,  r: 58, mass: 0.9, speed: 4.5, damage: 14, desc: 'Periodically teleports behind the opponent.' },
     { name: 'Zerk',    color: '#f97316', ability: 'Berserk', hp: 120, maxHp: 120, r: 67, mass: 1.5, speed: 3.2, damage: 8,  desc: 'Damage and speed massively increase as HP drops.' },
