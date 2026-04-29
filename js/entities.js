@@ -13,6 +13,9 @@ export class Ball {
         this.ability = def.ability;
         this.maxHp = def.maxHp;
         this.hp = def.hp;
+        this.naturalMaxHp = def.maxHp;
+        this.maxHpLost = 0;
+        this.maxHpGain = 0;
         this.r = def.r;
         this.mass = def.mass;
         this.speed = def.speed;
@@ -33,6 +36,9 @@ export class Ball {
         this.grappling   = 0;
         this.charging    = 0;
         this.pulseVisual = 0;
+        this.momentumArmor = 0;
+        this.momentumArmorDuration = 1;
+        this.scytheVisual = 0;
 
         this.behaviorState = 'AGGRESSIVE';
         this.behaviorTimer = 0;
@@ -44,33 +50,85 @@ export class Ball {
         this.poisonTickTimer = 0;
     }
 
+    getLastStandScale() {
+        const hpRatio = Math.max(0, Math.min(1, this.hp / this.maxHp));
+        if (hpRatio >= 0.5) {
+            const t = (1 - hpRatio) / 0.5;
+            return { damageBonus: t * 0.25, reduction: t * 0.15 };
+        }
+        if (hpRatio >= 0.25) {
+            const t = (0.5 - hpRatio) / 0.25;
+            return { damageBonus: 0.25 + t * 0.25, reduction: 0.15 + t * 0.15 };
+        }
+        const t = Math.min(1, (0.25 - hpRatio) / 0.15);
+        return { damageBonus: 0.5 + t * 0.25, reduction: 0.3 + t * 0.1 };
+    }
+
+    getLastStandDamageMultiplier() {
+        return 1 + this.getLastStandScale().damageBonus;
+    }
+
+    getDamageReduction() {
+        let reduction = 0;
+        if (this.ability === 'Last Stand') reduction += this.getLastStandScale().reduction;
+        if (this.momentumArmor > 0) {
+            reduction += 0.3 * Math.max(0, this.momentumArmor / this.momentumArmorDuration);
+        }
+        return Math.min(0.65, reduction);
+    }
+
+    applyMaxHpReduction(amount, maxLossRatio = 0.45) {
+        const maxLoss = this.naturalMaxHp * maxLossRatio;
+        const availableLoss = Math.max(0, maxLoss - this.maxHpLost);
+        const loss = Math.min(amount, availableLoss, Math.max(0, this.maxHp - 1));
+        if (loss <= 0) return 0;
+
+        this.maxHp -= loss;
+        this.maxHpLost += loss;
+        this.hp = Math.min(this.hp, this.maxHp);
+        return loss;
+    }
+
+    gainMaxHp(amount, maxGainRatio = 0.4) {
+        const maxGain = this.naturalMaxHp * maxGainRatio;
+        const gain = Math.min(amount, Math.max(0, maxGain - this.maxHpGain));
+        if (gain <= 0) return 0;
+
+        this.maxHp += gain;
+        this.maxHpGain += gain;
+        this.hp = Math.min(this.maxHp, this.hp + gain * 0.5);
+        return gain;
+    }
+
     takeDamage(amount, source, isReflect = false) {
         if (this.intangible > 0) return;
 
+        const effectiveAmount = Math.max(0, amount * (1 - this.getDamageReduction()));
+
         if (this.shield > 0) {
-            this.shield -= amount;
+            this.shield -= effectiveAmount;
             if (this.shield < 0) {
                 this.hp += this.shield;
                 this.shield = 0;
             }
         } else {
-            this.hp -= amount;
+            this.hp -= effectiveAmount;
         }
 
         if (source && source.ability === 'Vampire' && !isReflect && this.hp > 0) {
-            const heal = amount * 0.5;
+            const heal = effectiveAmount * 0.5;
             source.hp = Math.min(source.maxHp, source.hp + heal);
             emitter.emit('fx:text', { text: '+HP', x: source.x, y: source.y - source.r - 45, color: '#10b981' });
         }
 
         if (this.ability === 'Reflect' && source && !isReflect && this.hp > 0) {
-            const reflected = amount * 0.4;
+            const reflected = effectiveAmount * 0.4;
             source.takeDamage(reflected, this, true);
             emitter.emit('fx:particles', { x: this.x, y: this.y, color: '#14b8a6', count: 5, speed: 2 });
         }
 
         this.flash = 0.083;
-        emitter.emit('ball:hit', { defender: this, attacker: source, damage: amount, isReflect });
+        emitter.emit('ball:hit', { defender: this, attacker: source, damage: effectiveAmount, isReflect });
     }
 
     update(enemy, width, height, dt) {
@@ -87,6 +145,8 @@ export class Ball {
         if (this.intangible  > 0) this.intangible   -= dt;
         if (this.pulseVisual > 0) this.pulseVisual   -= dt;
         if (this.flash       > 0) this.flash         -= dt;
+        if (this.momentumArmor > 0) this.momentumArmor -= dt;
+        if (this.scytheVisual  > 0) this.scytheVisual  -= dt;
 
         if (this.poisoned > 0) {
             this.poisoned        -= dt;
@@ -147,6 +207,17 @@ export class Ball {
                     this.behaviorState = 'FLANKING';
                 } else if (this.ability === 'Minion') {
                     this.behaviorState = (dist < 200) ? 'RETREATING' : 'FLANKING';
+                } else if (this.ability === 'Boomerang') {
+                    if (abilityReady) {
+                        this.behaviorState = dist > 650 ? 'AGGRESSIVE' : (dist < 240 ? 'RETREATING' : 'AGGRESSIVE');
+                    } else {
+                        this.behaviorState = this.momentumArmor > 0 ? 'FLANKING' : (dist < 420 ? 'RETREATING' : 'FLANKING');
+                    }
+                } else if (this.ability === 'Brand') {
+                    if (abilityReady && dist < 650 && dist > 180) this.behaviorState = 'SNIPING';
+                    else this.behaviorState = dist > 650 ? 'AGGRESSIVE' : (dist < 320 ? 'RETREATING' : 'FLANKING');
+                } else if (this.ability === 'Scythe' || this.ability === 'Last Stand') {
+                    this.behaviorState = 'AGGRESSIVE';
                 } else if (this.ability === 'Berserk') {
                     this.behaviorState = 'AGGRESSIVE';
                 } else if (this.ability === 'Poison') {
@@ -225,6 +296,7 @@ export class Ball {
 
             let activeSpeed = this.speed;
             if (this.ability === 'Berserk') activeSpeed *= 1 + ((this.maxHp - this.hp) / this.maxHp) * 0.3;
+            if (this.ability === 'Last Stand') activeSpeed *= 1 + (this.getLastStandScale().damageBonus * 0.2);
 
             const angleDiff = normalizeAngle(targetAngle - this.angle);
             let turnSpeed = 0.05 * (activeSpeed / 4) * F;
@@ -297,6 +369,55 @@ export class Ball {
                 this.shield          = 50;
                 this.abilityCooldown = 7.0;
                 emitter.emit('ability:used', { ball: this, ability: 'Shield', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Boomerang' && dist < 720 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 0.45) {
+                const leadFrames = Math.min(24, dist / 16);
+                const throwAngle = Math.atan2(
+                    enemy.y + enemy.vy * leadFrames - this.y,
+                    enemy.x + enemy.vx * leadFrames - this.x
+                );
+                const px = this.x + Math.cos(throwAngle) * (this.r + 16);
+                const py = this.y + Math.sin(throwAngle) * (this.r + 16);
+                state.projectiles.push(new BoomerangProjectile(px, py, enemy, this, throwAngle, this.flankDir));
+                this.momentumArmorDuration = 1.9;
+                this.momentumArmor = this.momentumArmorDuration;
+                this.abilityCooldown = 3.2;
+                this.behaviorState = 'FLANKING';
+                this.behaviorTimer = 1.1;
+                emitter.emit('ability:used', { ball: this, ability: 'Boomerang', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Brand' && dist < 680 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 0.35) {
+                const px = this.x + Math.cos(this.angle) * (this.r + 12);
+                const py = this.y + Math.sin(this.angle) * (this.r + 12);
+                const p = new Projectile(px, py, enemy, this, this.angle, true, 8.5, 8);
+                p.effect = 'brand';
+                p.color = '#0f172a';
+                p.r = 11;
+                p.life = 2.5;
+                state.projectiles.push(p);
+                this.abilityCooldown = 3.4;
+                this.behaviorState = 'RETREATING';
+                this.behaviorTimer = 0.9;
+                emitter.emit('ability:used', { ball: this, ability: 'Brand', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Scythe' && dist < this.r + enemy.r + 150 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 1.45 && enemy.intangible <= 0) {
+                const damage = 9;
+                enemy.takeDamage(damage, this);
+                const stolen = enemy.applyMaxHpReduction(enemy.naturalMaxHp * 0.06, 0.4);
+                const gained = this.gainMaxHp(stolen, 0.4);
+                if (stolen > 0 || gained > 0) {
+                    emitter.emit('fx:text', { text: 'MAX STEAL', x: enemy.x, y: enemy.y - enemy.r - 45, color: '#dc2626' });
+                }
+                this.scytheVisual = 0.25;
+                this.abilityCooldown = 1.2;
+                emitter.emit('fx:particles', { x: enemy.x, y: enemy.y, color: '#dc2626', count: 18, speed: 4 });
+                emitter.emit('ability:used', { ball: this, ability: 'Scythe', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Last Stand' && dist < this.r + enemy.r + 70 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 1.1 && enemy.intangible <= 0) {
+                enemy.takeDamage(7 * this.getLastStandDamageMultiplier(), this);
+                this.abilityCooldown = 1.0;
+                emitter.emit('fx:particles', { x: enemy.x, y: enemy.y, color: this.color, count: 12, speed: 3 });
+                emitter.emit('ability:used', { ball: this, ability: 'Last Stand', x: this.x, y: this.y });
 
             } else if (this.ability === 'Missile') {
                 const px = this.x + Math.cos(this.angle) * (this.r + 10);
@@ -388,6 +509,12 @@ export class Projectile {
 
         if (dist < this.target.r + this.r && this.target.intangible <= 0) {
             this.target.takeDamage(this.damage, this.source);
+            if (this.effect === 'brand') {
+                const loss = this.target.applyMaxHpReduction(this.target.naturalMaxHp * 0.07, 0.45);
+                if (loss > 0) {
+                    emitter.emit('fx:text', { text: 'MAX-', x: this.target.x, y: this.target.y - this.target.r - 45, color: '#111827' });
+                }
+            }
             this.active = false;
             emitter.emit('fx:particles', { x: this.x, y: this.y, color: this.color, count: 12, speed: 3 });
             return;
@@ -415,6 +542,80 @@ export class Projectile {
 
         if (Math.random() < 0.5 * dt * 60) {
             emitter.emit('fx:particles', { x: this.x, y: this.y, color: this.color, count: 1, speed: 0.5, size: 2 });
+        }
+    }
+}
+
+export class BoomerangProjectile extends Projectile {
+    constructor(x, y, target, source, startAngle, curveDir) {
+        super(x, y, target, source, startAngle, false, 10.5, 9);
+        this.isBoomerang = true;
+        this.r = 13;
+        this.life = 1.9;
+        this.maxLife = 1.9;
+        this.returning = false;
+        this.curveDir = curveDir || 1;
+        this.hitOutbound = false;
+        this.hitReturn = false;
+        this.spin = 0;
+    }
+
+    update(dt) {
+        this.life -= dt;
+        if (this.life <= 0) {
+            this.active = false;
+            this.source.momentumArmor = 0;
+            return;
+        }
+
+        const F = dt * 60;
+        const elapsed = this.maxLife - this.life;
+        this.spin += 0.35 * F;
+        if (!this.returning && elapsed > 0.82) this.returning = true;
+
+        if (this.returning) {
+            const dx = this.source.x - this.x;
+            const dy = this.source.y - this.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            this.vx += (dx / dist) * 1.35 * F;
+            this.vy += (dy / dist) * 1.35 * F;
+            if (dist < this.source.r + this.r) {
+                this.active = false;
+                this.source.momentumArmor = 0;
+                return;
+            }
+        } else {
+            const v = Math.hypot(this.vx, this.vy) || 1;
+            const vx = this.vx / v;
+            const vy = this.vy / v;
+            this.vx += -vy * this.curveDir * 0.35 * F;
+            this.vy += vx * this.curveDir * 0.35 * F;
+        }
+
+        const v = Math.hypot(this.vx, this.vy) || 1;
+        const maxSpeed = this.returning ? 12 : this.speed;
+        if (v > maxSpeed) {
+            this.vx = (this.vx / v) * maxSpeed;
+            this.vy = (this.vy / v) * maxSpeed;
+        }
+
+        this.x += this.vx * F;
+        this.y += this.vy * F;
+
+        const dx = this.target.x - this.x;
+        const dy = this.target.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        const canHit = this.returning ? !this.hitReturn : !this.hitOutbound;
+
+        if (canHit && dist < this.target.r + this.r && this.target.intangible <= 0) {
+            this.target.takeDamage(this.damage, this.source);
+            if (this.returning) this.hitReturn = true;
+            else this.hitOutbound = true;
+            emitter.emit('fx:particles', { x: this.x, y: this.y, color: this.color, count: 14, speed: 4 });
+        }
+
+        if (Math.random() < 0.55 * F) {
+            emitter.emit('fx:particles', { x: this.x, y: this.y, color: this.color, count: 1, speed: 0.4, size: 2 });
         }
     }
 }

@@ -1,12 +1,12 @@
 # Tiny Fight Club
 
-A browser-based 2D tournament simulator where 16 AI-controlled ball fighters compete in a single-elimination bracket. Sit back and watch — there's no player input during fights.
+A browser-based 2D tournament simulator where AI-controlled ball fighters compete in a single-elimination bracket. Sit back and watch — there's no player input during fights.
 
 **[Play it live →](https://tiny-fight-club.vercel.app)**
 
 ## Fighters
 
-16 unique fighters, each with a distinct ability:
+20 unique fighters, each with a distinct ability:
 
 | Fighter | Ability | Playstyle |
 |---------|---------|-----------|
@@ -26,6 +26,10 @@ A browser-based 2D tournament simulator where 16 AI-controlled ball fighters com
 | Swarm | Minion | Spawns small homing drones to harass |
 | Thorn | Reflect | Reflects 40% of taken damage back to attacker |
 | Comet | Charge | Builds massive momentum in a straight line |
+| Razor | Boomerang | Curved blade can hit on the throw and return |
+| Malik | Brand | Black flame hits permanently reduce enemy max HP |
+| Enma | Scythe | Wide melee hits steal max HP |
+| Vanta | Last Stand | Lower HP increases damage and damage reduction |
 
 ## Running Locally
 
@@ -74,7 +78,7 @@ game.js (requestAnimationFrame loop)
 |------|----------------|
 | `js/game.js` | Main loop, tournament state machine, canvas/HiDPI setup |
 | `js/state.js` | Central singleton: bracket, active entities, game phase |
-| `js/entities.js` | `Ball` class — physics, HP, cooldowns, all AI + 16 ability implementations |
+| `js/entities.js` | `Ball` class — physics, HP, cooldowns, all AI + 20 ability implementations |
 | `js/systems.js` | `resolveCollision()` — elastic collision math, weapon hit detection, damage |
 | `js/renderer.js` | Pure canvas draw functions (no state mutation) |
 | `js/ui.js` | DOM: bracket visualization, roster, leaderboard, overlay modal |

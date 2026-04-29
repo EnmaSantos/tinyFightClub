@@ -17,12 +17,33 @@ export function drawBall(ctx, ball) {
         ctx.stroke();
     }
 
+    if (ball.momentumArmor > 0) {
+        const armorPct = Math.max(0, ball.momentumArmor / ball.momentumArmorDuration);
+        ctx.beginPath();
+        ctx.arc(0, 0, ball.r + 8, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(245, 158, 11, ${0.2 + armorPct * 0.45})`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+    }
+
     if (ball.pulseVisual > 0) {
         ctx.beginPath();
         ctx.arc(0, 0, ball.r + (15 - ball.pulseVisual) * 4, 0, Math.PI * 2);
         ctx.strokeStyle = `rgba(14, 165, 233, ${ball.pulseVisual / 15})`;
         ctx.lineWidth = 4;
         ctx.stroke();
+    }
+
+    if (ball.scytheVisual > 0) {
+        ctx.save();
+        ctx.rotate(ball.angle);
+        ctx.beginPath();
+        ctx.arc(0, 0, ball.r + 34, -0.95, 0.95);
+        ctx.strokeStyle = `rgba(220, 38, 38, ${Math.min(1, ball.scytheVisual * 5)})`;
+        ctx.lineWidth = 9;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        ctx.restore();
     }
 
     ctx.rotate(ball.angle);
@@ -90,6 +111,34 @@ export function drawHazard(ctx, hazard) {
 }
 
 export function drawProjectile(ctx, proj) {
+    if (proj.isBoomerang) {
+        ctx.save();
+        ctx.translate(proj.x, proj.y);
+        ctx.rotate(proj.spin);
+        ctx.strokeStyle = proj.color;
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(0, 0, proj.r, Math.PI * 0.15, Math.PI * 1.35);
+        ctx.stroke();
+        ctx.strokeStyle = '#fff7ed';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+        return;
+    }
+
+    if (proj.effect === 'brand') {
+        ctx.fillStyle = '#020617';
+        ctx.beginPath();
+        ctx.arc(proj.x, proj.y, proj.r + 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#f97316';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        return;
+    }
+
     ctx.fillStyle = proj.color;
     ctx.beginPath();
     ctx.arc(proj.x, proj.y, proj.r, 0, Math.PI * 2);

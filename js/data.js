@@ -14,5 +14,9 @@ export const baseBalls = [
     { name: 'Pulsar',  color: '#0ea5e9', ability: 'Pulse',   hp: 140, maxHp: 140, r: 70, mass: 1.6, speed: 2.8, damage: 8,  desc: 'Emits a repelling, damaging energy shockwave.' },
     { name: 'Swarm',   color: '#a3e635', ability: 'Minion',  hp: 100, maxHp: 100, r: 60, mass: 1,   speed: 3.6, damage: 5,  desc: 'Spawns small homing drones to harass.' },
     { name: 'Thorn',   color: '#14b8a6', ability: 'Reflect', hp: 160, maxHp: 160, r: 67, mass: 1.8, speed: 2.5, damage: 6,  desc: 'Reflects 40% of taken damage back to attacker.' },
-    { name: 'Comet',   color: '#fb923c', ability: 'Charge',  hp: 120, maxHp: 120, r: 61, mass: 1.4, speed: 3.0, damage: 14, desc: 'Builds massive momentum in a straight line.' }
+    { name: 'Comet',   color: '#fb923c', ability: 'Charge',  hp: 120, maxHp: 120, r: 61, mass: 1.4, speed: 3.0, damage: 14, desc: 'Builds massive momentum in a straight line.' },
+    { name: 'Razor',   color: '#f59e0b', ability: 'Boomerang', hp: 115, maxHp: 115, r: 60, mass: 1.1, speed: 3.8, damage: 9,  desc: 'Throws a curved blade that can hit on the way out and back.' },
+    { name: 'Malik',   color: '#111827', ability: 'Brand',   hp: 105, maxHp: 105, r: 61, mass: 1.1, speed: 3.4, damage: 8,  desc: 'Black flame hits permanently reduce the enemy max HP.' },
+    { name: 'Enma',    color: '#dc2626', ability: 'Scythe',  hp: 105, maxHp: 105, r: 62, mass: 1.2, speed: 3.7, damage: 9,  desc: 'Wide scythe hits steal max HP and grow stronger over time.' },
+    { name: 'Vanta',   color: '#312e81', ability: 'Last Stand', hp: 135, maxHp: 135, r: 65, mass: 1.5, speed: 3.0, damage: 10, desc: 'Gains damage and damage reduction as HP gets lower.' }
 ];

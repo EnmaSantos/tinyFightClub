@@ -47,6 +47,8 @@ export function resolveCollision(b1, b2) {
 
                 if (b2.ability === 'Berserk') dmg1 *= 1 + ((b2.maxHp - b2.hp) / b2.maxHp) * 0.6;
                 if (b1.ability === 'Berserk') dmg2 *= 1 + ((b1.maxHp - b1.hp) / b1.maxHp) * 0.6;
+                if (b2.ability === 'Last Stand') dmg1 *= b2.getLastStandDamageMultiplier();
+                if (b1.ability === 'Last Stand') dmg2 *= b1.getLastStandDamageMultiplier();
 
                 let validHitOccurred = false;
 

@@ -102,7 +102,8 @@ emitter.on('ability:used', ({ ball, ability }) => {
     const labels = {
         Dash: 'DASH!', Charge: 'CHARGE!', Grapple: 'GRAPPLE!',
         Phase: 'PHASE!', Pulse: 'PULSE!', Teleport: 'TELEPORT!',
-        Shield: 'SHIELD!'
+        Shield: 'SHIELD!', Boomerang: 'BLADE!', Brand: 'BRAND!',
+        Scythe: 'SCYTHE!', 'Last Stand': 'LAST STAND!'
     };
     const color = ability === 'Shield' ? '#3b82f6' : ball.color;
     if (labels[ability]) {

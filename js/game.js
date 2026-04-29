@@ -73,15 +73,13 @@ function createBracket(roster) {
     return bracket;
 }
 
-function getRoundName(roundIndex, firstRoundSize = state.bracket[0]?.length ?? 0) {
+function getRoundName(roundIndex) {
     const matchesInRound = state.bracket[roundIndex]?.length ?? 0;
-    const fighterCount = matchesInRound * 2;
 
     if (matchesInRound === 1) return 'Final';
     if (matchesInRound === 2) return 'Semifinals';
     if (matchesInRound === 4) return 'Quarterfinals';
-    if (roundIndex === 0) return `Round of ${Math.max(fighterCount, firstRoundSize * 2)}`;
-    return `Round ${roundIndex + 1}`;
+    return `Round of ${matchesInRound * 2}`;
 }
 
 function advanceByeMatches() {
@@ -97,7 +95,7 @@ function advanceByeMatches() {
         if (!winner) {
             state.currentMatch++;
         } else {
-            endMatch(winner, loser, 0, true);
+            endMatch(winner, loser, 0, true, true);
         }
     }
 }
@@ -168,7 +166,7 @@ function startNextMatch() {
     });
 }
 
-function endMatch(winnerDef, loserDef, duration, skipEvent = false) {
+function endMatch(winnerDef, loserDef, duration, skipEvent = false, skipOverlay = false) {
     state.bracket[state.currentRound][state.currentMatch].winner = winnerDef;
 
     const round      = state.currentRound;
@@ -195,6 +193,8 @@ function endMatch(winnerDef, loserDef, duration, skipEvent = false) {
     if (!skipEvent && loserDef) {
         emitter.emit('match:end', { winner: winnerDef, loser: loserDef, round, matchIndex, duration });
     }
+
+    if (skipOverlay) return;
 
     if (state.tourneyWinner) {
         emitter.emit('tournament:end', { champion: state.tourneyWinner });
