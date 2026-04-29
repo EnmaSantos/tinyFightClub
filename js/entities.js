@@ -298,7 +298,7 @@ export class Ball {
                 this.abilityCooldown = 7.0;
                 emitter.emit('ability:used', { ball: this, ability: 'Shield', x: this.x, y: this.y });
 
-            } else if (this.ability === 'Missile' && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 0.4) {
+            } else if (this.ability === 'Missile') {
                 const px = this.x + Math.cos(this.angle) * (this.r + 10);
                 const py = this.y + Math.sin(this.angle) * (this.r + 10);
                 state.projectiles.push(new Projectile(px, py, enemy, this, this.angle, true, 7, 10));
@@ -307,7 +307,7 @@ export class Ball {
             } else if (this.ability === 'Laser' && Math.abs(normalizeAngle(this.angle - laserLeadAngle)) < 0.15) {
                 const px = this.x + Math.cos(this.angle) * (this.r + 10);
                 const py = this.y + Math.sin(this.angle) * (this.r + 10);
-                state.projectiles.push(new Projectile(px, py, enemy, this, this.angle, false, 18, 15));
+                state.projectiles.push(new Projectile(px, py, enemy, this, this.angle, false, 18, 20));
                 this.abilityCooldown = 1.33;
                 this.behaviorState   = 'RETREATING';
                 this.behaviorTimer   = 0.67;
