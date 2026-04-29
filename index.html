@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiny Fight Club</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row">
+
+    <!-- Left Panel: Tournament Bracket, Roster & Leaderboard -->
+    <div id="left-panel" class="w-full md:w-[45%] flex-shrink-0 bg-slate-800 flex flex-col border-b md:border-b-0 md:border-r border-slate-700 h-1/2 md:h-full z-20 shadow-2xl">
+
+        <!-- Tab bar -->
+        <div class="flex bg-slate-900 border-b border-slate-700 flex-shrink-0">
+            <button id="tab-bracket" onclick="switchTab('bracket')"
+                    class="tab-btn flex-1 font-bold tracking-wider text-slate-200 border-b-2 border-indigo-500 py-2"
+                    style="font-size: clamp(9px, 1vw, 17px)">BRACKET</button>
+            <button id="tab-leaderboard" onclick="switchTab('leaderboard')"
+                    class="tab-btn flex-1 font-bold tracking-wider text-slate-500 border-b-2 border-transparent py-2"
+                    style="font-size: clamp(9px, 1vw, 17px)">LEADERBOARD</button>
+        </div>
+
+        <!-- Bracket view -->
+        <div id="view-bracket" class="flex flex-col flex-1 min-h-0">
+            <div id="bracket-container" class="flex-1 overflow-auto p-4 flex items-center shadow-inner">
+            </div>
+            <div id="roster-container" class="h-1/3 overflow-y-auto p-3 border-t border-slate-700 bg-slate-900/50 flex-shrink-0">
+            </div>
+        </div>
+
+        <!-- Leaderboard view (hidden by default) -->
+        <div id="view-leaderboard" class="hidden flex-1 overflow-y-auto p-3">
+            <div id="leaderboard-container" class="space-y-1">
+                <div class="text-slate-500 italic p-3" style="font-size: clamp(11px, 1.1vw, 18px)">Loading…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Arena -->
+    <div id="arena-container" class="flex-1 relative bg-slate-900 h-1/2 md:h-full z-10">
+        <canvas id="game-canvas" class="w-full h-full"></canvas>
+
+        <!-- Live Match Header -->
+        <div id="match-header" class="absolute top-4 left-1/2 transform -translate-x-1/2 font-black bg-slate-900/90 rounded-full hidden shadow-lg shadow-black/50 border border-slate-700 z-20 transition-all whitespace-nowrap"
+             style="font-size: clamp(12px, 2.5vw, 36px); padding: clamp(6px, 0.6vw, 12px) clamp(12px, 2vw, 32px)">
+        </div>
+
+        <!-- UI Overlay (Menu, Next Match, Game Over) -->
+        <div id="overlay" class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center z-30 backdrop-blur-sm transition-opacity duration-300">
+            <h2 id="overlay-title" class="font-black text-white mb-2 drop-shadow-lg text-center uppercase tracking-widest"
+                style="font-size: clamp(20px, 4.5vw, 72px)">Tiny Fight Club</h2>
+            <div id="overlay-desc" class="text-slate-300 mb-8 max-w-md text-center px-4"
+                 style="font-size: clamp(12px, 1.6vw, 26px)">Welcome to the arena.</div>
+            <button id="start-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full transition-all transform hover:scale-105 hover:shadow-indigo-500/50 hover:shadow-lg active:scale-95"
+                    style="font-size: clamp(12px, 1.6vw, 26px); padding: clamp(8px, 0.8vw, 16px) clamp(16px, 2vw, 32px)">
+                Start Tournament
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            const isBracket = tab === 'bracket';
+            document.getElementById('view-bracket').classList.toggle('hidden', !isBracket);
+            document.getElementById('view-bracket').classList.toggle('flex', isBracket);
+            document.getElementById('view-leaderboard').classList.toggle('hidden', isBracket);
+            document.getElementById('tab-bracket').classList.toggle('text-slate-200', isBracket);
+            document.getElementById('tab-bracket').classList.toggle('border-indigo-500', isBracket);
+            document.getElementById('tab-bracket').classList.toggle('text-slate-500', !isBracket);
+            document.getElementById('tab-bracket').classList.toggle('border-transparent', !isBracket);
+            document.getElementById('tab-leaderboard').classList.toggle('text-slate-200', !isBracket);
+            document.getElementById('tab-leaderboard').classList.toggle('border-indigo-500', !isBracket);
+            document.getElementById('tab-leaderboard').classList.toggle('text-slate-500', isBracket);
+            document.getElementById('tab-leaderboard').classList.toggle('border-transparent', isBracket);
+            if (!isBracket) window.dispatchEvent(new Event('leaderboard:show'));
+        }
+    </script>
+    <script type="module" src="js/game.js"></script>
+</body>
+</html>

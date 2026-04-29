@@ -1,0 +1,18 @@
+export const baseBalls = [
+    { name: 'Dash',    color: '#06b6d4', ability: 'Dash',    hp: 100, maxHp: 100, r: 56, mass: 1,   speed: 5,   damage: 10, desc: 'High speed, dashes forward to strike.' },
+    { name: 'Titan',   color: '#94a3b8', ability: 'Heavy',   hp: 200, maxHp: 200, r: 88, mass: 3,   speed: 2,   damage: 18, desc: 'Massive, high HP, turns slowly.' },
+    { name: 'Dracula', color: '#ef4444', ability: 'Vampire', hp: 120, maxHp: 120, r: 61, mass: 1.2, speed: 3.5, damage: 12, desc: 'Heals 50% of damage dealt by its weapon.' },
+    { name: 'Ninja',   color: '#71717a', ability: 'Teleport',hp: 90,  maxHp: 90,  r: 58, mass: 0.9, speed: 4.5, damage: 14, desc: 'Periodically teleports behind the opponent.' },
+    { name: 'Zerk',    color: '#f97316', ability: 'Berserk', hp: 120, maxHp: 120, r: 67, mass: 1.5, speed: 3.2, damage: 8,  desc: 'Damage and speed massively increase as HP drops.' },
+    { name: 'Paladin', color: '#3b82f6', ability: 'Shield',  hp: 120, maxHp: 120, r: 67, mass: 1.5, speed: 2.8, damage: 10, desc: 'Periodically regenerates a protective shield.' },
+    { name: 'Venom',   color: '#22c55e', ability: 'Poison',  hp: 110, maxHp: 110, r: 61, mass: 1.1, speed: 3.8, damage: 6,  desc: 'Frontal strikes apply dangerous Damage-Over-Time.' },
+    { name: 'Mage',    color: '#a855f7', ability: 'Missile', hp: 80,  maxHp: 80,  r: 56, mass: 0.8, speed: 3.5, damage: 4,  desc: 'Stays away and fires homing magic missiles.' },
+    { name: 'Spike',   color: '#d97706', ability: 'Trap',    hp: 110, maxHp: 110, r: 58, mass: 1.1, speed: 4,   damage: 8,  desc: 'Leaves volatile traps behind.' },
+    { name: 'Sniper',  color: '#fcd34d', ability: 'Laser',   hp: 80,  maxHp: 80,  r: 53, mass: 0.8, speed: 4.2, damage: 6,  desc: 'Fires fast, non-homing piercing shots.' },
+    { name: 'Hook',    color: '#8b5cf6', ability: 'Grapple', hp: 130, maxHp: 130, r: 61, mass: 1.3, speed: 3.8, damage: 10, desc: 'Violently pulls the enemy towards itself.' },
+    { name: 'Ghost',   color: '#cbd5e1', ability: 'Phase',   hp: 90,  maxHp: 90,  r: 56, mass: 0.9, speed: 5,   damage: 12, desc: 'Periodically becomes intangible to attacks.' },
+    { name: 'Pulsar',  color: '#0ea5e9', ability: 'Pulse',   hp: 140, maxHp: 140, r: 70, mass: 1.6, speed: 2.8, damage: 8,  desc: 'Emits a repelling, damaging energy shockwave.' },
+    { name: 'Swarm',   color: '#a3e635', ability: 'Minion',  hp: 100, maxHp: 100, r: 60, mass: 1,   speed: 3.6, damage: 5,  desc: 'Spawns small homing drones to harass.' },
+    { name: 'Thorn',   color: '#14b8a6', ability: 'Reflect', hp: 160, maxHp: 160, r: 67, mass: 1.8, speed: 2.5, damage: 6,  desc: 'Reflects 40% of taken damage back to attacker.' },
+    { name: 'Comet',   color: '#fb923c', ability: 'Charge',  hp: 120, maxHp: 120, r: 61, mass: 1.4, speed: 3.0, damage: 14, desc: 'Builds massive momentum in a straight line.' }
+];
