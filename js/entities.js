@@ -39,6 +39,15 @@ export class Ball {
         this.momentumArmor = 0;
         this.momentumArmorDuration = 1;
         this.scytheVisual = 0;
+        this.damageBuff = 0;
+        this.haste = 0;
+        this.fortify = 0;
+        this.damageBuffMult = 1;
+        this.hasteMult = 1;
+        this.fortifyMult = 1;
+        this.ultimateCharge = 0;
+        this.ultimateCooldown = 0;
+        this.ultimateWindup = 0;
 
         this.behaviorState = 'AGGRESSIVE';
         this.behaviorTimer = 0;

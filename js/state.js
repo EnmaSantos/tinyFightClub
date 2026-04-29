@@ -11,5 +11,14 @@ export const state = {
     particles: [],
     floatingTexts: [],
     hazards: [],
-    confetti: []
+    confetti: [],
+    pickups: [],
+    arenaEffects: [],
+    env: {
+        windTimer: 5,
+        windAngle: 0,
+        windStrength: 0,
+        strikeTimer: 8,
+        pickupTimer: 6
+    }
 };
