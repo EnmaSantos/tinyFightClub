@@ -77,6 +77,14 @@ export class Ball {
         return 1 + this.getLastStandScale().damageBonus;
     }
 
+    getDamageOutputMultiplier() {
+        return this.damageBuffMult * (this.ultimateWindup > 0 ? 1.25 : 1);
+    }
+
+    scaleDamage(amount) {
+        return amount * this.getDamageOutputMultiplier();
+    }
+
     getDamageReduction() {
         let reduction = 0;
         if (this.ability === 'Last Stand') reduction += this.getLastStandScale().reduction;
@@ -109,10 +117,104 @@ export class Ball {
         return gain;
     }
 
+    addUltimateCharge(amount) {
+        this.ultimateCharge = Math.min(100, this.ultimateCharge + amount);
+    }
+
+    applyPickup(type, enemy = null) {
+        if (type === 'damage') {
+            this.damageBuff = 7;
+            this.damageBuffMult = 1.35;
+            emitter.emit('fx:text', { text: 'DAMAGE UP', x: this.x, y: this.y - this.r - 45, color: '#f97316' });
+        } else if (type === 'haste') {
+            this.haste = 7;
+            this.hasteMult = 1.3;
+            emitter.emit('fx:text', { text: 'HASTE', x: this.x, y: this.y - this.r - 45, color: '#22d3ee' });
+        } else if (type === 'fortify') {
+            this.fortify = 7;
+            this.fortifyMult = 0.72;
+            emitter.emit('fx:text', { text: 'FORTIFY', x: this.x, y: this.y - this.r - 45, color: '#3b82f6' });
+        } else if (type === 'heal') {
+            const heal = this.maxHp * 0.3;
+            this.hp = Math.min(this.maxHp, this.hp + heal);
+            emitter.emit('fx:text', { text: 'MEGA HEAL', x: this.x, y: this.y - this.r - 45, color: '#10b981' });
+        } else if (type === 'rocket') {
+            this.ultimateCharge = Math.min(100, this.ultimateCharge + 20);
+            emitter.emit('fx:text', { text: 'ROCKET', x: this.x, y: this.y - this.r - 45, color: '#f59e0b' });
+            if (enemy) {
+                const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+                const px = this.x + Math.cos(angle) * (this.r + 14);
+                const py = this.y + Math.sin(angle) * (this.r + 14);
+                const rocket = new Projectile(px, py, enemy, this, angle, false, 20, 24);
+                rocket.effect = 'rocket';
+                rocket.life = 1.8;
+                rocket.r = 9;
+                rocket.vx = Math.cos(angle) * rocket.speed;
+                rocket.vy = Math.sin(angle) * rocket.speed;
+                state.projectiles.push(rocket);
+            }
+        }
+    }
+
+    tryUltimate(enemy, width, height, dist, dx, dy) {
+        if (this.ultimateCharge < 100 || this.ultimateCooldown > 0 || this.ultimateWindup > 0) return;
+
+        this.ultimateCharge = 0;
+        this.ultimateCooldown = 12;
+        this.ultimateWindup = 0.75;
+        emitter.emit('ability:used', { ball: this, ability: 'ULTIMATE', x: this.x, y: this.y });
+
+        const ability = this.ability;
+        if (ability === 'Heavy') {
+            this.fortify = 5;
+            this.fortifyMult = 0.6;
+            enemy.takeDamage(this.scaleDamage(22), this);
+            enemy.vx += (dx / Math.max(1, dist)) * 28;
+            enemy.vy += (dy / Math.max(1, dist)) * 28;
+            emitter.emit('fx:text', { text: 'COLOSSUS IMPACT', x: this.x, y: this.y - this.r - 45, color: '#94a3b8' });
+        } else if (ability === 'Missile' || ability === 'Laser' || ability === 'Brand') {
+            for (let i = -2; i <= 2; i++) {
+                const a = this.angle + i * 0.16;
+                const px = this.x + Math.cos(a) * (this.r + 10);
+                const py = this.y + Math.sin(a) * (this.r + 10);
+                const p = new Projectile(px, py, enemy, this, a, true, 10, this.scaleDamage(9));
+                p.effect = ability === 'Brand' ? 'brand' : null;
+                state.projectiles.push(p);
+            }
+            emitter.emit('fx:text', { text: 'BARRAGE', x: this.x, y: this.y - this.r - 45, color: this.color });
+        } else if (ability === 'Minion') {
+            for (let i = 0; i < 8; i++) {
+                const a = (i / 8) * Math.PI * 2;
+                const px = this.x + Math.cos(a) * (this.r + 10);
+                const py = this.y + Math.sin(a) * (this.r + 10);
+                const p = new Projectile(px, py, enemy, this, a, true, 5.2, this.scaleDamage(4));
+                p.isSwarm = true;
+                p.life = 6;
+                p.r = 6;
+                state.projectiles.push(p);
+            }
+            emitter.emit('fx:text', { text: 'DRONE STORM', x: this.x, y: this.y - this.r - 45, color: '#a3e635' });
+        } else if (ability === 'Trap' || ability === 'Pulse' || ability === 'Reflect') {
+            for (let i = 0; i < 4; i++) {
+                const a = (i / 4) * Math.PI * 2;
+                state.hazards.push(new Hazard(this.x + Math.cos(a) * 60, this.y + Math.sin(a) * 60, this));
+            }
+            enemy.takeDamage(this.scaleDamage(12), this);
+            emitter.emit('fx:text', { text: 'ARENA LOCK', x: this.x, y: this.y - this.r - 45, color: this.color });
+        } else {
+            this.damageBuff = 5;
+            this.damageBuffMult = 1.55;
+            this.haste = 5;
+            this.hasteMult = 1.35;
+            this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.15);
+            emitter.emit('fx:text', { text: 'OVERDRIVE', x: this.x, y: this.y - this.r - 45, color: this.color });
+        }
+    }
+
     takeDamage(amount, source, isReflect = false) {
         if (this.intangible > 0) return;
 
-        const effectiveAmount = Math.max(0, amount * (1 - this.getDamageReduction()));
+        const effectiveAmount = Math.max(0, amount * (1 - this.getDamageReduction()) * this.fortifyMult);
 
         if (this.shield > 0) {
             this.shield -= effectiveAmount;
@@ -137,6 +239,8 @@ export class Ball {
         }
 
         this.flash = 0.083;
+        if (source) source.addUltimateCharge(Math.max(2, effectiveAmount * 0.15));
+        this.addUltimateCharge(Math.max(1, effectiveAmount * 0.08));
         emitter.emit('ball:hit', { defender: this, attacker: source, damage: effectiveAmount, isReflect });
     }
 
@@ -156,6 +260,17 @@ export class Ball {
         if (this.flash       > 0) this.flash         -= dt;
         if (this.momentumArmor > 0) this.momentumArmor -= dt;
         if (this.scytheVisual  > 0) this.scytheVisual  -= dt;
+        if (this.ultimateCooldown > 0) this.ultimateCooldown -= dt;
+        if (this.ultimateWindup > 0) this.ultimateWindup -= dt;
+
+        if (this.damageBuff > 0) this.damageBuff -= dt;
+        else this.damageBuffMult = 1;
+        if (this.haste > 0) this.haste -= dt;
+        else this.hasteMult = 1;
+        if (this.fortify > 0) this.fortify -= dt;
+        else this.fortifyMult = 1;
+
+        this.addUltimateCharge(dt * 2.2);
 
         if (this.poisoned > 0) {
             this.poisoned        -= dt;
@@ -306,6 +421,7 @@ export class Ball {
             let activeSpeed = this.speed;
             if (this.ability === 'Berserk') activeSpeed *= 1 + ((this.maxHp - this.hp) / this.maxHp) * 0.3;
             if (this.ability === 'Last Stand') activeSpeed *= 1 + (this.getLastStandScale().damageBonus * 0.2);
+            activeSpeed *= this.hasteMult;
 
             const angleDiff = normalizeAngle(targetAngle - this.angle);
             let turnSpeed = 0.05 * (activeSpeed / 4) * F;
@@ -326,6 +442,8 @@ export class Ball {
                 this.vy += Math.sin(this.angle) * activeSpeed * 0.1 * F;
             }
         }
+
+        this.tryUltimate(enemy, width, height, dist, dx, dy);
 
         if (this.abilityCooldown <= 0 && state.gameState === 'FIGHTING') {
             if (this.ability === 'Dash' && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 0.3) {
@@ -358,7 +476,7 @@ export class Ball {
             } else if (this.ability === 'Pulse' && dist < (this.r + enemy.r + 120) && enemy.intangible <= 0) {
                 this.abilityCooldown = 2.5;
                 this.pulseVisual     = 0.25;
-                enemy.takeDamage(15, this);
+                enemy.takeDamage(this.scaleDamage(15), this);
                 enemy.vx += (dx / dist) * 18;
                 enemy.vy += (dy / dist) * 18;
                 emitter.emit('ability:used', { ball: this, ability: 'Pulse', x: this.x, y: this.y });
@@ -387,7 +505,9 @@ export class Ball {
                 );
                 const px = this.x + Math.cos(throwAngle) * (this.r + 16);
                 const py = this.y + Math.sin(throwAngle) * (this.r + 16);
-                state.projectiles.push(new BoomerangProjectile(px, py, enemy, this, throwAngle, this.flankDir));
+                const boom = new BoomerangProjectile(px, py, enemy, this, throwAngle, this.flankDir);
+                boom.damage = this.scaleDamage(boom.damage);
+                state.projectiles.push(boom);
                 this.momentumArmorDuration = 1.9;
                 this.momentumArmor = this.momentumArmorDuration;
                 this.abilityCooldown = 3.2;
@@ -403,6 +523,7 @@ export class Ball {
                 p.color = '#0f172a';
                 p.r = 11;
                 p.life = 2.5;
+                p.damage = this.scaleDamage(p.damage);
                 state.projectiles.push(p);
                 this.abilityCooldown = 3.4;
                 this.behaviorState = 'RETREATING';
@@ -410,7 +531,7 @@ export class Ball {
                 emitter.emit('ability:used', { ball: this, ability: 'Brand', x: this.x, y: this.y });
 
             } else if (this.ability === 'Scythe' && dist < this.r + enemy.r + 150 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 1.45 && enemy.intangible <= 0) {
-                const damage = 9;
+                const damage = this.scaleDamage(9);
                 enemy.takeDamage(damage, this);
                 const stolen = enemy.applyMaxHpReduction(enemy.naturalMaxHp * 0.06, 0.4);
                 const gained = this.gainMaxHp(stolen, 0.4);
@@ -423,7 +544,7 @@ export class Ball {
                 emitter.emit('ability:used', { ball: this, ability: 'Scythe', x: this.x, y: this.y });
 
             } else if (this.ability === 'Last Stand' && dist < this.r + enemy.r + 70 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 1.1 && enemy.intangible <= 0) {
-                enemy.takeDamage(7 * this.getLastStandDamageMultiplier(), this);
+                enemy.takeDamage(this.scaleDamage(7 * this.getLastStandDamageMultiplier()), this);
                 this.abilityCooldown = 1.0;
                 emitter.emit('fx:particles', { x: enemy.x, y: enemy.y, color: this.color, count: 12, speed: 3 });
                 emitter.emit('ability:used', { ball: this, ability: 'Last Stand', x: this.x, y: this.y });
@@ -431,13 +552,15 @@ export class Ball {
             } else if (this.ability === 'Missile') {
                 const px = this.x + Math.cos(this.angle) * (this.r + 10);
                 const py = this.y + Math.sin(this.angle) * (this.r + 10);
-                state.projectiles.push(new Projectile(px, py, enemy, this, this.angle, true, 7, 10));
+                const p = new Projectile(px, py, enemy, this, this.angle, true, 7, this.scaleDamage(10));
+                state.projectiles.push(p);
                 this.abilityCooldown = 1.5;
 
             } else if (this.ability === 'Laser' && Math.abs(normalizeAngle(this.angle - laserLeadAngle)) < 0.15) {
                 const px = this.x + Math.cos(this.angle) * (this.r + 10);
                 const py = this.y + Math.sin(this.angle) * (this.r + 10);
-                state.projectiles.push(new Projectile(px, py, enemy, this, this.angle, false, 18, 20));
+                const p = new Projectile(px, py, enemy, this, this.angle, false, 18, this.scaleDamage(20));
+                state.projectiles.push(p);
                 this.abilityCooldown = 1.33;
                 this.behaviorState   = 'RETREATING';
                 this.behaviorTimer   = 0.67;
@@ -447,7 +570,7 @@ export class Ball {
                 const px     = this.x + Math.cos(this.angle) * (this.r + 10);
                 const py     = this.y + Math.sin(this.angle) * (this.r + 10);
                 const spread = (Math.random() - 0.5) * 1.5;
-                const p      = new Projectile(px, py, enemy, this, this.angle + spread, true, 4.5, 2);
+                const p      = new Projectile(px, py, enemy, this, this.angle + spread, true, 4.5, this.scaleDamage(2));
                 p.isSwarm        = true;
                 p.r              = 5.25;
                 p.life           = 5.0;
@@ -511,6 +634,7 @@ export class Projectile {
     update(dt) {
         this.life -= dt;
         if (this.life <= 0) { this.active = false; return; }
+        if (!this.target) { this.active = false; return; }
 
         const dx   = this.target.x - this.x;
         const dy   = this.target.y - this.y;
@@ -523,6 +647,9 @@ export class Projectile {
                 if (loss > 0) {
                     emitter.emit('fx:text', { text: 'MAX-', x: this.target.x, y: this.target.y - this.target.r - 45, color: '#111827' });
                 }
+            } else if (this.effect === 'rocket') {
+                emitter.emit('fx:text', { text: 'BOOM!', x: this.target.x, y: this.target.y - this.target.r - 45, color: '#f59e0b' });
+                emitter.emit('fx:particles', { x: this.target.x, y: this.target.y, color: '#f59e0b', count: 26, speed: 6, size: 4 });
             }
             this.active = false;
             emitter.emit('fx:particles', { x: this.x, y: this.y, color: this.color, count: 12, speed: 3 });
@@ -625,6 +752,78 @@ export class BoomerangProjectile extends Projectile {
 
         if (Math.random() < 0.55 * F) {
             emitter.emit('fx:particles', { x: this.x, y: this.y, color: this.color, count: 1, speed: 0.4, size: 2 });
+        }
+    }
+}
+
+export class Pickup {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.r = 18;
+        this.life = 12;
+        this.active = true;
+        this.spin = 0;
+    }
+
+    update(dt, ballA, ballB) {
+        this.life -= dt;
+        this.spin += dt * 4;
+        if (this.life <= 0) {
+            this.active = false;
+            return;
+        }
+
+        const checkPickup = (owner, enemy) => {
+            const dist = Math.hypot(owner.x - this.x, owner.y - this.y);
+            if (dist < owner.r + this.r) {
+                owner.applyPickup(this.type, enemy);
+                emitter.emit('fx:particles', { x: this.x, y: this.y, color: owner.color, count: 20, speed: 3, size: 3 });
+                this.active = false;
+            }
+        };
+
+        checkPickup(ballA, ballB);
+        if (this.active) checkPickup(ballB, ballA);
+    }
+}
+
+export class ArenaEffect {
+    constructor(kind, x, y, power = 1) {
+        this.kind = kind;
+        this.x = x;
+        this.y = y;
+        this.power = power;
+        this.life = kind === 'strike' ? 1.6 : 1.2;
+        this.active = true;
+        this.triggered = false;
+        this.r = kind === 'strike' ? 74 : 96;
+    }
+
+    update(dt, ballA, ballB) {
+        this.life -= dt;
+        if (this.life <= 0) {
+            this.active = false;
+            return;
+        }
+
+        if (!this.triggered && this.kind === 'strike' && this.life <= 0.3) {
+            this.triggered = true;
+            const hit = (ball) => {
+                const dist = Math.hypot(ball.x - this.x, ball.y - this.y);
+                if (dist < this.r + ball.r) {
+                    ball.takeDamage(14 * this.power, null);
+                    const pushX = (ball.x - this.x) / Math.max(1, dist);
+                    const pushY = (ball.y - this.y) / Math.max(1, dist);
+                    ball.vx += pushX * 18 * this.power;
+                    ball.vy += pushY * 18 * this.power;
+                }
+            };
+            hit(ballA);
+            hit(ballB);
+            emitter.emit('fx:particles', { x: this.x, y: this.y, color: '#eab308', count: 36, speed: 7, size: 4 });
+            emitter.emit('fx:text', { text: 'STRIKE!', x: this.x, y: this.y - 24, color: '#facc15' });
         }
     }
 }

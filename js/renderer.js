@@ -1,6 +1,14 @@
 // Pure rendering functions — no imports from state.js or game logic.
 // Each function receives only what it needs to draw.
 
+export function drawArenaAtmosphere(ctx, w, h, env) {
+    const glow = Math.max(0, env.windStrength * 8);
+    if (glow > 0) {
+        ctx.fillStyle = `rgba(56, 189, 248, ${0.03 + glow * 0.012})`;
+        ctx.fillRect(0, 0, w, h);
+    }
+}
+
 export function drawBall(ctx, ball) {
     ctx.save();
     ctx.translate(ball.x, ball.y);
@@ -82,9 +90,25 @@ export function drawBall(ctx, ball) {
         ctx.fillRect(ball.x - barW / 2, ball.y - ball.r - 24, barW * shieldPct, 3);
     }
 
+    const ultPct = Math.max(0, Math.min(1, ball.ultimateCharge / 100));
+    if (ultPct > 0) {
+        ctx.fillStyle = '#7c3aed';
+        ctx.fillRect(ball.x - barW / 2, ball.y - ball.r - 16, barW * ultPct, 2);
+    }
+
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1;
     ctx.strokeRect(ball.x - barW / 2, ball.y - ball.r - 24, barW, 6);
+
+    if (ball.damageBuff > 0 || ball.haste > 0 || ball.fortify > 0) {
+        const tags = [];
+        if (ball.damageBuff > 0) tags.push('DMG');
+        if (ball.haste > 0) tags.push('HST');
+        if (ball.fortify > 0) tags.push('DEF');
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText(tags.join('+'), ball.x, ball.y - ball.r - 8);
+    }
 
     ctx.fillStyle = '#f8fafc';
     ctx.font = 'bold 18px sans-serif';
@@ -108,6 +132,55 @@ export function drawHazard(ctx, hazard) {
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.globalAlpha = 1.0;
+}
+
+export function drawPickup(ctx, pickup) {
+    const colors = {
+        damage: '#f97316',
+        haste: '#22d3ee',
+        fortify: '#3b82f6',
+        heal: '#10b981',
+        rocket: '#f59e0b'
+    };
+
+    ctx.save();
+    ctx.translate(pickup.x, pickup.y);
+    ctx.rotate(pickup.spin);
+    ctx.fillStyle = colors[pickup.type] || '#e2e8f0';
+    ctx.globalAlpha = Math.min(1, pickup.life / 2);
+    ctx.beginPath();
+    ctx.moveTo(0, -pickup.r);
+    ctx.lineTo(pickup.r * 0.86, 0);
+    ctx.lineTo(0, pickup.r);
+    ctx.lineTo(-pickup.r * 0.86, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+}
+
+export function drawArenaEffect(ctx, effect) {
+    if (effect.kind === 'strike') {
+        const t = Math.max(0, effect.life / 1.6);
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, effect.r * (1 - t * 0.4), 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(250, 204, 21, ${0.2 + t * 0.5})`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        if (effect.life < 0.32) {
+            ctx.beginPath();
+            ctx.moveTo(effect.x, effect.y - 42);
+            ctx.lineTo(effect.x + 10, effect.y - 8);
+            ctx.lineTo(effect.x - 4, effect.y - 8);
+            ctx.lineTo(effect.x + 6, effect.y + 32);
+            ctx.strokeStyle = 'rgba(250, 204, 21, 0.95)';
+            ctx.lineWidth = 6;
+            ctx.stroke();
+        }
+    }
 }
 
 export function drawProjectile(ctx, proj) {

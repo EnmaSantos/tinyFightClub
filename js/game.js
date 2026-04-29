@@ -1,12 +1,12 @@
 import { state } from './state.js';
 import { baseBalls } from './data.js';
-import { Ball } from './entities.js';
+import { Ball, Pickup, ArenaEffect } from './entities.js';
 import { resolveCollision } from './systems.js';
 import { createParticles, createConfetti } from './fx.js';
 import { emitter } from './events.js';
 import { normalizeAngle } from './utils.js';
 import {
-    drawBall, drawHazard, drawProjectile,
+    drawArenaAtmosphere, drawArenaEffect, drawBall, drawHazard, drawPickup, drawProjectile,
     drawParticle, drawFloatingText,
     drawGrappleLine, drawArenaBorder, drawConfetti
 } from './renderer.js';
@@ -36,6 +36,7 @@ let canvas, ctx;
 
 const VIRTUAL_W = 1056;
 const VIRTUAL_H = 1080;
+const PICKUP_TYPES = ['damage', 'haste', 'fortify', 'heal', 'rocket'];
 
 function resizeCanvas() {
     const container = document.getElementById('arena-container');
@@ -127,6 +128,53 @@ function initTournament() {
     showOverlay('Tiny Fight Club', `${roster.length} fighters enter. Only one survives.`, 'Start Tournament', startNextMatch);
 }
 
+function spawnRandomPickup() {
+    const margin = 130;
+    const x = margin + Math.random() * (VIRTUAL_W - margin * 2);
+    const y = margin + Math.random() * (VIRTUAL_H - margin * 2);
+    const idx = Math.floor(Math.random() * PICKUP_TYPES.length);
+    state.pickups.push(new Pickup(x, y, PICKUP_TYPES[idx]));
+}
+
+function updateEnvironment(dt) {
+    const F = dt * 60;
+    const env = state.env;
+
+    env.windTimer -= dt;
+    env.strikeTimer -= dt;
+    env.pickupTimer -= dt;
+
+    if (env.windTimer <= 0) {
+        env.windTimer = 5 + Math.random() * 5;
+        env.windAngle = Math.random() * Math.PI * 2;
+        env.windStrength = 0.9 + Math.random() * 1.5;
+        emitter.emit('fx:text', { text: 'GUST!', x: VIRTUAL_W / 2, y: 80, color: '#38bdf8' });
+    }
+
+    if (env.strikeTimer <= 0) {
+        env.strikeTimer = 6 + Math.random() * 6;
+        const margin = 120;
+        const x = margin + Math.random() * (VIRTUAL_W - margin * 2);
+        const y = margin + Math.random() * (VIRTUAL_H - margin * 2);
+        state.arenaEffects.push(new ArenaEffect('strike', x, y, 1));
+    }
+
+    if (env.pickupTimer <= 0 && state.pickups.length < 3) {
+        env.pickupTimer = 5 + Math.random() * 4;
+        spawnRandomPickup();
+    }
+
+    env.windStrength *= Math.pow(0.987, F);
+    if (env.windStrength > 0.02) {
+        const wx = Math.cos(env.windAngle) * 0.07 * env.windStrength * F;
+        const wy = Math.sin(env.windAngle) * 0.07 * env.windStrength * F;
+        state.ball1.vx += wx;
+        state.ball1.vy += wy;
+        state.ball2.vx += wx;
+        state.ball2.vy += wy;
+    }
+}
+
 function startNextMatch() {
     if (state.autoStartTimer) clearTimeout(state.autoStartTimer);
 
@@ -154,6 +202,13 @@ function startNextMatch() {
     state.floatingTexts = [];
     state.hazards       = [];
     state.confetti      = [];
+    state.pickups       = [];
+    state.arenaEffects  = [];
+    state.env.windTimer = 3 + Math.random() * 3;
+    state.env.windAngle = Math.random() * Math.PI * 2;
+    state.env.windStrength = 0;
+    state.env.strikeTimer = 4 + Math.random() * 4;
+    state.env.pickupTimer = 3 + Math.random() * 3;
     state.gameState     = 'FIGHTING';
     state.matchStartTime = performance.now();
 
@@ -247,6 +302,7 @@ function gameLoop(timestamp) {
 
     if (state.gameState === 'FIGHTING') {
         // Update
+        updateEnvironment(dt);
         state.ball1.update(state.ball2, VIRTUAL_W, VIRTUAL_H, dt);
         state.ball2.update(state.ball1, VIRTUAL_W, VIRTUAL_H, dt);
         resolveCollision(state.ball1, state.ball2);
@@ -255,11 +311,15 @@ function gameLoop(timestamp) {
         state.particles.forEach(p => p.update(dt));
         state.floatingTexts.forEach(ft => ft.update(dt));
         state.hazards.forEach(h => h.update(h.source === state.ball1 ? state.ball2 : state.ball1, dt));
+        state.pickups.forEach(p => p.update(dt, state.ball1, state.ball2));
+        state.arenaEffects.forEach(ae => ae.update(dt, state.ball1, state.ball2));
 
         state.projectiles   = state.projectiles.filter(p => p.active);
         state.particles     = state.particles.filter(p => p.life > 0);
         state.floatingTexts = state.floatingTexts.filter(ft => ft.life > 0);
         state.hazards       = state.hazards.filter(h => h.active);
+        state.pickups       = state.pickups.filter(p => p.active);
+        state.arenaEffects  = state.arenaEffects.filter(ae => ae.active);
 
         // Draw
         ctx.save();
@@ -269,7 +329,10 @@ function gameLoop(timestamp) {
         ctx.rect(0, 0, VIRTUAL_W, VIRTUAL_H);
         ctx.clip();
 
+        drawArenaAtmosphere(ctx, VIRTUAL_W, VIRTUAL_H, state.env);
+        state.arenaEffects.forEach(ae => drawArenaEffect(ctx, ae));
         state.hazards.forEach(h => drawHazard(ctx, h));
+        state.pickups.forEach(p => drawPickup(ctx, p));
 
         if (state.ball1.grappling > 0 && state.ball2.intangible <= 0) drawGrappleLine(ctx, state.ball1, state.ball2);
         if (state.ball2.grappling > 0 && state.ball1.intangible <= 0) drawGrappleLine(ctx, state.ball2, state.ball1);
