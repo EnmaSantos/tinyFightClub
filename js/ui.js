@@ -6,7 +6,14 @@ import { emitter } from './events.js';
 // when the simulation emits events.
 
 emitter.on('match:start', ({ ball1, ball2, round }) => {
-    const rName = ['Round of 16', 'Quarterfinals', 'Semifinals', 'Finals'][round];
+    const matchesInRound = state.bracket[round]?.length ?? 0;
+    const rName = matchesInRound === 1
+        ? 'Final'
+        : matchesInRound === 2
+            ? 'Semifinals'
+            : matchesInRound === 4
+                ? 'Quarterfinals'
+                : `Round of ${matchesInRound * 2}`;
     const mh    = document.getElementById('match-header');
     mh.innerHTML = `<span class="text-slate-400 text-sm block -mt-1 mb-1">${rName}</span><span style="color:${ball1.color}">${ball1.name}</span> <span class="text-slate-500 mx-2 text-3xl">VS</span> <span style="color:${ball2.color}">${ball2.name}</span>`;
     mh.classList.remove('hidden');
@@ -44,8 +51,8 @@ export function renderBracket() {
     // No min-width — match boxes flex to fill available panel space
     let html = `<div class="flex h-full w-full min-w-0">`;
 
-    for (let r = 0; r < 4; r++) {
-        html += `<div class="flex-1 min-w-0 flex flex-col justify-around px-1 relative ${r < 3 ? 'border-r border-slate-700/50' : ''}">`;
+    for (let r = 0; r < state.bracket.length; r++) {
+        html += `<div class="flex-1 min-w-0 flex flex-col justify-around px-1 relative ${r < state.bracket.length - 1 ? 'border-r border-slate-700/50' : ''}">`;
 
         for (let m = 0; m < state.bracket[r].length; m++) {
             const match = state.bracket[r][m];
@@ -58,15 +65,22 @@ export function renderBracket() {
 
             html += `<div class="bg-slate-800 rounded-lg p-1.5 border-2 ${borderClass} flex flex-col gap-0.5 shadow-md z-10 my-0.5">`;
 
-            const p1C = match.p1 ? match.p1.color : '#475569';
-            const p1N = match.p1 ? match.p1.name : 'TBD';
-            const p1W = match.winner === match.p1 ? 'font-black text-white' : (match.winner ? 'text-slate-600 line-through' : 'text-slate-300 font-semibold');
-            html += `<div class="flex items-center gap-1 text-xs ${p1W}"><div class="w-2 h-2 rounded-full flex-shrink-0" style="background:${p1C}"></div><span class="truncate">${p1N}</span></div>`;
-
-            const p2C = match.p2 ? match.p2.color : '#475569';
-            const p2N = match.p2 ? match.p2.name : 'TBD';
-            const p2W = match.winner === match.p2 ? 'font-black text-white' : (match.winner ? 'text-slate-600 line-through' : 'text-slate-300 font-semibold');
-            html += `<div class="flex items-center gap-1 text-xs ${p2W}"><div class="w-2 h-2 rounded-full flex-shrink-0" style="background:${p2C}"></div><span class="truncate">${p2N}</span></div>`;
+            const entrants = [match.p1, match.p2].filter(Boolean);
+            if (entrants.length === 0) {
+                html += `<div class="text-xs text-slate-500 italic">Awaiting fighters</div>`;
+            } else {
+                entrants.forEach((fighter, idx) => {
+                    const textClass = match.winner === fighter
+                        ? 'font-black text-white'
+                        : (match.winner ? 'text-slate-600 line-through' : 'text-slate-300 font-semibold');
+                    const autoAdvance = entrants.length === 1 && r === state.currentRound && m === state.currentMatch && !match.winner;
+                    html += `<div class="flex items-center gap-1 text-xs ${textClass}">
+                                <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:${fighter.color}"></div>
+                                <span class="truncate">${fighter.name}</span>
+                                ${autoAdvance && idx === 0 ? '<span class="ml-auto text-[10px] uppercase tracking-wide text-slate-500">Bye</span>' : ''}
+                             </div>`;
+                });
+            }
 
             html += `</div>`;
         }

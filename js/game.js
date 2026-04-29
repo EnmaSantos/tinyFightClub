@@ -51,6 +51,57 @@ function getViewport() {
     return { scale, offsetX, offsetY };
 }
 
+function createEmptyMatch() {
+    return { p1: null, p2: null, winner: null };
+}
+
+function createBracket(roster) {
+    const bracket = [];
+    let roundSize = Math.max(1, Math.ceil(roster.length / 2));
+
+    bracket.push(Array.from({ length: roundSize }, (_, i) => ({
+        p1: roster[i * 2] ?? null,
+        p2: roster[i * 2 + 1] ?? null,
+        winner: null
+    })));
+
+    while (roundSize > 1) {
+        roundSize = Math.ceil(roundSize / 2);
+        bracket.push(Array.from({ length: roundSize }, createEmptyMatch));
+    }
+
+    return bracket;
+}
+
+function getRoundName(roundIndex, firstRoundSize = state.bracket[0]?.length ?? 0) {
+    const matchesInRound = state.bracket[roundIndex]?.length ?? 0;
+    const fighterCount = matchesInRound * 2;
+
+    if (matchesInRound === 1) return 'Final';
+    if (matchesInRound === 2) return 'Semifinals';
+    if (matchesInRound === 4) return 'Quarterfinals';
+    if (roundIndex === 0) return `Round of ${Math.max(fighterCount, firstRoundSize * 2)}`;
+    return `Round ${roundIndex + 1}`;
+}
+
+function advanceByeMatches() {
+    while (!state.tourneyWinner && state.currentRound < state.bracket.length) {
+        const roundMatches = state.bracket[state.currentRound];
+        if (!roundMatches || state.currentMatch >= roundMatches.length) break;
+
+        const match = roundMatches[state.currentMatch];
+        const winner = match.p1 ?? match.p2;
+        const loser = match.p1 && match.p2 ? null : null;
+
+        if (match.p1 && match.p2) break;
+        if (!winner) {
+            state.currentMatch++;
+        } else {
+            endMatch(winner, loser, 0, true);
+        }
+    }
+}
+
 function initTournament() {
     const roster = baseBalls.map(base => {
         const hpVar    = 0.9 + Math.random() * 0.2;
@@ -65,40 +116,17 @@ function initTournament() {
         };
     }).sort(() => Math.random() - 0.5);
 
-    state.bracket = [
-        [
-            { p1: roster[0],  p2: roster[1],  winner: null },
-            { p1: roster[2],  p2: roster[3],  winner: null },
-            { p1: roster[4],  p2: roster[5],  winner: null },
-            { p1: roster[6],  p2: roster[7],  winner: null },
-            { p1: roster[8],  p2: roster[9],  winner: null },
-            { p1: roster[10], p2: roster[11], winner: null },
-            { p1: roster[12], p2: roster[13], winner: null },
-            { p1: roster[14], p2: roster[15], winner: null }
-        ],
-        [
-            { p1: null, p2: null, winner: null },
-            { p1: null, p2: null, winner: null },
-            { p1: null, p2: null, winner: null },
-            { p1: null, p2: null, winner: null }
-        ],
-        [
-            { p1: null, p2: null, winner: null },
-            { p1: null, p2: null, winner: null }
-        ],
-        [
-            { p1: null, p2: null, winner: null }
-        ]
-    ];
+    state.bracket = createBracket(roster);
 
     state.currentRound  = 0;
     state.currentMatch  = 0;
     state.tourneyWinner = null;
     state.gameState     = 'BRACKET';
 
+    advanceByeMatches();
     renderBracket();
     renderRoster();
-    showOverlay('Tiny Fight Club', '16 unique balls compete. Only one will survive.', 'Start Tournament', startNextMatch);
+    showOverlay('Tiny Fight Club', `${roster.length} fighters enter. Only one survives.`, 'Start Tournament', startNextMatch);
 }
 
 function startNextMatch() {
@@ -140,13 +168,13 @@ function startNextMatch() {
     });
 }
 
-function endMatch(winnerDef, loserDef, duration) {
+function endMatch(winnerDef, loserDef, duration, skipEvent = false) {
     state.bracket[state.currentRound][state.currentMatch].winner = winnerDef;
 
     const round      = state.currentRound;
     const matchIndex = state.currentMatch;
 
-    if (state.currentRound < 3) {
+    if (state.currentRound < state.bracket.length - 1) {
         const nextIdx = Math.floor(state.currentMatch / 2);
         const isP1    = state.currentMatch % 2 === 0;
         if (isP1) state.bracket[state.currentRound + 1][nextIdx].p1 = winnerDef;
@@ -164,7 +192,9 @@ function endMatch(winnerDef, loserDef, duration) {
     state.gameState = 'BRACKET';
 
     // Emit for subscribers (API recording, stats, etc.)
-    emitter.emit('match:end', { winner: winnerDef, loser: loserDef, round, matchIndex, duration });
+    if (!skipEvent && loserDef) {
+        emitter.emit('match:end', { winner: winnerDef, loser: loserDef, round, matchIndex, duration });
+    }
 
     if (state.tourneyWinner) {
         emitter.emit('tournament:end', { champion: state.tourneyWinner });
@@ -172,10 +202,16 @@ function endMatch(winnerDef, loserDef, duration) {
         return;
     }
 
+    advanceByeMatches();
+    if (state.tourneyWinner) {
+        emitter.emit('tournament:end', { champion: state.tourneyWinner });
+        showOverlay(`${state.tourneyWinner.name} Wins!`, 'The ultimate champion has been crowned.', 'Play Again', initTournament, state.tourneyWinner.color);
+        return;
+    }
+
     const match  = state.bracket[state.currentRound][state.currentMatch];
-    const rNames = ['Round of 16 Match', 'Quarterfinal', 'Semifinal', 'Final Match'];
     showOverlay(
-        `Next: ${rNames[state.currentRound]}`,
+        `Next: ${getRoundName(state.currentRound)}`,
         `${match.p1.name} vs ${match.p2.name} (Auto-starting in 5s...)`,
         'Start Now',
         () => { if (state.autoStartTimer) clearTimeout(state.autoStartTimer); startNextMatch(); }
