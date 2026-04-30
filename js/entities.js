@@ -363,8 +363,9 @@ export class Ball {
         const dist = Math.hypot(dx, dy);
 
         let laserLeadAngle = Math.atan2(dy, dx);
-        if (this.ability === 'Laser' && dist > 0) {
-            const travelFrames = dist / 15;
+        if ((this.ability === 'Laser' || this.ability === 'Headshot') && dist > 0) {
+            const leadSpeed = this.ability === 'Headshot' ? 22 : 15;
+            const travelFrames = dist / leadSpeed;
             laserLeadAngle = Math.atan2(
                 enemy.y + enemy.vy * travelFrames - this.y,
                 enemy.x + enemy.vx * travelFrames - this.x

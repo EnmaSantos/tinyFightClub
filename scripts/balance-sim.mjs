@@ -29,25 +29,34 @@ function parseRoster() {
 
 const ABILITY = {
     Dash:      { off: 1.07, def: 0.97, ctrl: 1.00, sustain: 0.96 },
-    Heavy:     { off: 0.95, def: 1.17, ctrl: 0.92, sustain: 1.08 },
+    Heavy:     { off: 0.86, def: 1.06, ctrl: 0.87, sustain: 1.05 },
     Vampire:   { off: 1.02, def: 1.03, ctrl: 0.95, sustain: 1.16 },
     Teleport:  { off: 1.08, def: 0.98, ctrl: 1.02, sustain: 0.97 },
     Berserk:   { off: 1.12, def: 0.93, ctrl: 0.96, sustain: 1.02 },
     Shield:    { off: 0.95, def: 1.12, ctrl: 0.92, sustain: 1.15 },
     Poison:    { off: 1.03, def: 1.00, ctrl: 0.98, sustain: 1.04 },
-    Missile:   { off: 1.01, def: 0.98, ctrl: 1.10, sustain: 0.98 },
+    Missile:   { off: 1.08, def: 0.98, ctrl: 1.12, sustain: 0.98 },
     Trap:      { off: 1.00, def: 1.01, ctrl: 1.08, sustain: 1.00 },
-    Laser:     { off: 1.06, def: 0.95, ctrl: 1.11, sustain: 0.95 },
+    Laser:     { off: 1.18, def: 0.95, ctrl: 1.15, sustain: 0.95 },
     Grapple:   { off: 1.03, def: 1.01, ctrl: 1.07, sustain: 1.00 },
     Phase:     { off: 1.03, def: 1.05, ctrl: 1.01, sustain: 1.03 },
     Pulse:     { off: 0.99, def: 1.06, ctrl: 1.06, sustain: 1.02 },
-    Minion:    { off: 0.98, def: 1.00, ctrl: 1.13, sustain: 0.99 },
+    Minion:    { off: 1.05, def: 1.00, ctrl: 1.13, sustain: 0.99 },
     Reflect:   { off: 0.98, def: 1.11, ctrl: 0.97, sustain: 1.07 },
     Charge:    { off: 1.09, def: 0.98, ctrl: 0.98, sustain: 1.00 },
     Boomerang: { off: 1.04, def: 1.03, ctrl: 1.05, sustain: 1.03 },
-    Brand:     { off: 1.02, def: 0.99, ctrl: 1.04, sustain: 1.06 },
-    Scythe:    { off: 1.05, def: 0.99, ctrl: 0.98, sustain: 1.08 },
-    'Last Stand': { off: 1.06, def: 1.00, ctrl: 0.95, sustain: 1.08 }
+    Brand:     { off: 1.12, def: 0.99, ctrl: 1.06, sustain: 1.06 },
+    Scythe:    { off: 1.12, def: 0.99, ctrl: 0.98, sustain: 1.08 },
+    'Last Stand': { off: 1.12, def: 1.00, ctrl: 0.95, sustain: 1.08 },
+    Soulbound: { off: 1.07, def: 0.98, ctrl: 1.06, sustain: 0.98 },
+    Windblade: { off: 1.05, def: 0.99, ctrl: 1.10, sustain: 0.97 },
+    Bloodhunt: { off: 1.08, def: 1.01, ctrl: 1.02, sustain: 1.12 },
+    Headshot:  { off: 1.55, def: 0.93, ctrl: 1.18, sustain: 0.94 },
+    Gauntlet:  { off: 1.07, def: 1.04, ctrl: 0.99, sustain: 1.00 },
+    Regen:     { off: 0.96, def: 1.11, ctrl: 0.94, sustain: 1.18 },
+    Fishbones: { off: 1.45, def: 0.94, ctrl: 1.12, sustain: 0.95 },
+    Ravenous:  { off: 1.08, def: 1.03, ctrl: 1.01, sustain: 1.20 },
+    Haymaker:  { off: 1.07, def: 1.08, ctrl: 0.96, sustain: 1.05 }
 };
 
 function matchupMultiplier(a, b) {
@@ -61,6 +70,13 @@ function matchupMultiplier(a, b) {
     if (a.ability === 'Heavy' && (b.ability === 'Laser' || b.ability === 'Missile')) mult -= 0.03;
     if (a.ability === 'Last Stand' && b.damage <= 8) mult += 0.04;
     if (a.ability === 'Boomerang' && b.speed >= 4.5) mult -= 0.03;
+    if (a.ability === 'Headshot' && b.speed <= 3.2) mult += 0.04;
+    if (a.ability === 'Bloodhunt' && b.hp <= 105) mult += 0.04;
+    if (a.ability === 'Windblade' && (b.ability === 'Gauntlet' || b.ability === 'Haymaker')) mult += 0.03;
+    if (a.ability === 'Haymaker' && b.damage >= 11) mult += 0.04;
+    if (a.ability === 'Regen' && (b.ability === 'Brand' || b.ability === 'Headshot')) mult -= 0.04;
+    if (a.ability === 'Ravenous' && (b.ability === 'Vampire' || b.ability === 'Regen')) mult += 0.03;
+    if (a.ability === 'Fishbones' && b.mass >= 1.5) mult += 0.03;
 
     return Math.max(0.85, Math.min(1.15, mult));
 }

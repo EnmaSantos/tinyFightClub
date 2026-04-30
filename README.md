@@ -6,7 +6,7 @@ A browser-based 2D tournament simulator where AI-controlled ball fighters compet
 
 ## Fighters
 
-20 unique fighters, each with a distinct ability:
+29 unique fighters, each with a distinct ability:
 
 | Fighter | Ability | Playstyle |
 |---------|---------|-----------|
@@ -30,6 +30,15 @@ A browser-based 2D tournament simulator where AI-controlled ball fighters compet
 | Malik | Brand | Black flame hits permanently reduce enemy max HP |
 | Enma | Scythe | Wide melee hits steal max HP |
 | Vanta | Last Stand | Lower HP increases damage and damage reduction |
+| Yone | Soulbound | Dashes through enemies with a delayed spirit slash |
+| Yasuo | Windblade | Throws cutting wind and circles at mid range |
+| Warwick | Bloodhunt | Hunts wounded opponents with speed and healing |
+| Caitlyn | Headshot | Keeps distance and fires precision shots |
+| Vi | Gauntlet | Charges in with heavy knockback punches |
+| Dr Mundo | Regen | Regenerates and throws heavy cleavers |
+| Jinx | Fishbones | Fires unstable rocket salvos |
+| Swain | Ravenous | Drains nearby enemies and sends ravens |
+| Sett | Haymaker | Stores damage as grit, then releases a punch |
 
 ## Running Locally
 
@@ -78,20 +87,20 @@ game.js (requestAnimationFrame loop)
 |------|----------------|
 | `js/game.js` | Main loop, tournament state machine, canvas/HiDPI setup |
 | `js/state.js` | Central singleton: bracket, active entities, game phase |
-| `js/entities.js` | `Ball` class — physics, HP, cooldowns, all AI + 20 ability implementations |
+| `js/entities.js` | `Ball` class — physics, HP, cooldowns, all AI + 29 ability implementations |
 | `js/systems.js` | `resolveCollision()` — elastic collision math, weapon hit detection, damage |
 | `js/renderer.js` | Pure canvas draw functions (no state mutation) |
 | `js/ui.js` | DOM: bracket visualization, roster, leaderboard, overlay modal |
 | `js/fx.js` | Particle system, floating damage text |
 | `js/events.js` | Tiny `EventEmitter` singleton (`gameEvents`) |
-| `js/data.js` | 16 fighter stat/ability definitions |
+| `js/data.js` | 29 fighter stat/ability definitions |
 | `api/*.js` | Vercel serverless: record-match, leaderboard, history |
 
 ### Game State Machine
 
-`state.gamePhase` cycles: `BRACKET → FIGHTING → ANIMATING_WIN → BRACKET → ...`
+`state.gameState` cycles: `BRACKET → FIGHTING → ANIMATING_WIN → BRACKET → ...`
 
-4 rounds (8 → 4 → 2 → 1 matches) per tournament.
+Dynamic single-elimination rounds with byes as needed until one champion remains.
 
 ## Deployment
 

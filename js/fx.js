@@ -103,14 +103,18 @@ emitter.on('ability:used', ({ ball, ability }) => {
         Dash: 'DASH!', Charge: 'CHARGE!', Grapple: 'GRAPPLE!',
         Phase: 'PHASE!', Pulse: 'PULSE!', Teleport: 'TELEPORT!',
         Shield: 'SHIELD!', Boomerang: 'BLADE!', Brand: 'BRAND!',
-        Scythe: 'SCYTHE!', 'Last Stand': 'LAST STAND!', ULTIMATE: 'ULTIMATE!'
+        Scythe: 'SCYTHE!', 'Last Stand': 'LAST STAND!',
+        Soulbound: 'SOULBOUND!', Windblade: 'WINDBLADE!', Bloodhunt: 'BLOODHUNT!',
+        Headshot: 'HEADSHOT!', Gauntlet: 'GAUNTLET!', Regen: 'CLEAVER!',
+        Fishbones: 'FISHBONES!', Ravenous: 'RAVENOUS!', Haymaker: 'HAYMAKER!',
+        ULTIMATE: 'ULTIMATE!'
     };
     const color = ability === 'Shield' ? '#3b82f6' : ball.color;
     if (labels[ability]) {
         addFloatingText(labels[ability], ball.x, ball.y - ball.r - 10, color);
     }
     // Burst particles for visual abilities
-    const burstAbilities = ['Dash', 'Pulse', 'Teleport'];
+    const burstAbilities = ['Dash', 'Pulse', 'Teleport', 'Soulbound', 'Bloodhunt', 'Gauntlet', 'Haymaker'];
     if (burstAbilities.includes(ability)) {
         createParticles(ball.x, ball.y, ball.color, ability === 'Pulse' ? 30 : 15, ability === 'Pulse' ? 8 : 3);
     }

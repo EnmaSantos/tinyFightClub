@@ -321,6 +321,113 @@ export function drawProjectile(ctx, proj) {
         return;
     }
 
+    if (proj.effect === 'wind') {
+        const angle = Math.atan2(proj.vy, proj.vx);
+        ctx.save();
+        ctx.translate(proj.x, proj.y);
+        ctx.rotate(angle);
+        ctx.strokeStyle = '#bfdbfe';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(0, 0, proj.r + 9, -0.8, 0.8);
+        ctx.stroke();
+        ctx.strokeStyle = '#60a5fa';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-proj.r, 0);
+        ctx.lineTo(proj.r + 14, 0);
+        ctx.stroke();
+        ctx.restore();
+        return;
+    }
+
+    if (proj.effect === 'cleaver') {
+        const angle = Math.atan2(proj.vy, proj.vx);
+        ctx.save();
+        ctx.translate(proj.x, proj.y);
+        ctx.rotate(angle);
+        ctx.fillStyle = '#c4b5fd';
+        ctx.beginPath();
+        ctx.moveTo(proj.r + 12, 0);
+        ctx.lineTo(-proj.r, -7);
+        ctx.lineTo(-proj.r + 4, 0);
+        ctx.lineTo(-proj.r, 7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#4c1d95';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+        return;
+    }
+
+    if (proj.effect === 'raven') {
+        const angle = Math.atan2(proj.vy, proj.vx);
+        ctx.save();
+        ctx.translate(proj.x, proj.y);
+        ctx.rotate(angle);
+        ctx.fillStyle = '#450a0a';
+        ctx.beginPath();
+        ctx.moveTo(proj.r + 10, 0);
+        ctx.lineTo(-proj.r, -10);
+        ctx.lineTo(-proj.r + 4, 0);
+        ctx.lineTo(-proj.r, 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+        return;
+    }
+
+    if (proj.effect === 'headshot') {
+        const angle = Math.atan2(proj.vy, proj.vx);
+        ctx.save();
+        ctx.translate(proj.x, proj.y);
+        ctx.rotate(angle);
+        ctx.strokeStyle = '#bae6fd';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-proj.r - 12, 0);
+        ctx.lineTo(proj.r + 18, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(proj.r + 10, 0, proj.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        return;
+    }
+
+    if (proj.effect === 'rocket') {
+        const angle = Math.atan2(proj.vy, proj.vx);
+        ctx.save();
+        ctx.translate(proj.x, proj.y);
+        ctx.rotate(angle);
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.moveTo(proj.r + 12, 0);
+        ctx.lineTo(-proj.r, -7);
+        ctx.lineTo(-proj.r, 7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(-proj.r, 0);
+        ctx.lineTo(-proj.r - 12, -5);
+        ctx.lineTo(-proj.r - 8, 0);
+        ctx.lineTo(-proj.r - 12, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#7c2d12';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+        return;
+    }
+
     ctx.fillStyle = proj.color;
     ctx.beginPath();
     ctx.arc(proj.x, proj.y, proj.r, 0, Math.PI * 2);
