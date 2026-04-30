@@ -45,6 +45,63 @@ export function hideOverlay() {
     setTimeout(() => overlay.classList.add('hidden'), 300);
 }
 
+export function initArenaControls() {
+    const envToggle = document.getElementById('toggle-env');
+    const itemToggle = document.getElementById('toggle-items');
+    const ultToggle = document.getElementById('toggle-ult');
+    const envSlider = document.getElementById('slider-env-intensity');
+    const itemSlider = document.getElementById('slider-item-rate');
+    const ultSlider = document.getElementById('slider-ult-rate');
+    const strikeSlider = document.getElementById('slider-strike-dmg');
+    const pickupPowerSlider = document.getElementById('slider-pickup-power');
+    const envValue = document.getElementById('env-intensity-value');
+    const itemValue = document.getElementById('item-rate-value');
+    const ultValue = document.getElementById('ult-rate-value');
+    const strikeValue = document.getElementById('strike-dmg-value');
+    const pickupPowerValue = document.getElementById('pickup-power-value');
+
+    if (!envToggle || !itemToggle || !ultToggle || !envSlider || !itemSlider || !ultSlider || !strikeSlider || !pickupPowerSlider) return;
+
+    envToggle.checked = state.settings.envEnabled;
+    itemToggle.checked = state.settings.itemsEnabled;
+    ultToggle.checked = state.settings.ultimateEnabled;
+    envSlider.value = String(state.settings.envIntensity);
+    itemSlider.value = String(state.settings.pickupRate);
+    ultSlider.value = String(state.settings.ultimateChargeRate);
+    strikeSlider.value = String(state.settings.strikeDamage);
+    pickupPowerSlider.value = String(state.settings.pickupPower);
+    envValue.innerText = `${state.settings.envIntensity.toFixed(2)}x`;
+    itemValue.innerText = `${state.settings.pickupRate.toFixed(2)}x`;
+    ultValue.innerText = `${state.settings.ultimateChargeRate.toFixed(2)}x`;
+    strikeValue.innerText = `${Math.round(state.settings.strikeDamage)}`;
+    pickupPowerValue.innerText = `${state.settings.pickupPower.toFixed(2)}x`;
+
+    envToggle.addEventListener('change', () => { state.settings.envEnabled = envToggle.checked; });
+    itemToggle.addEventListener('change', () => { state.settings.itemsEnabled = itemToggle.checked; });
+    ultToggle.addEventListener('change', () => { state.settings.ultimateEnabled = ultToggle.checked; });
+
+    envSlider.addEventListener('input', () => {
+        state.settings.envIntensity = parseFloat(envSlider.value);
+        envValue.innerText = `${state.settings.envIntensity.toFixed(2)}x`;
+    });
+    itemSlider.addEventListener('input', () => {
+        state.settings.pickupRate = parseFloat(itemSlider.value);
+        itemValue.innerText = `${state.settings.pickupRate.toFixed(2)}x`;
+    });
+    ultSlider.addEventListener('input', () => {
+        state.settings.ultimateChargeRate = parseFloat(ultSlider.value);
+        ultValue.innerText = `${state.settings.ultimateChargeRate.toFixed(2)}x`;
+    });
+    strikeSlider.addEventListener('input', () => {
+        state.settings.strikeDamage = parseFloat(strikeSlider.value);
+        strikeValue.innerText = `${Math.round(state.settings.strikeDamage)}`;
+    });
+    pickupPowerSlider.addEventListener('input', () => {
+        state.settings.pickupPower = parseFloat(pickupPowerSlider.value);
+        pickupPowerValue.innerText = `${state.settings.pickupPower.toFixed(2)}x`;
+    });
+}
+
 export function renderBracket() {
     const container = document.getElementById('bracket-container');
 

@@ -42,6 +42,70 @@ export function drawBall(ctx, ball) {
         ctx.stroke();
     }
 
+    if (ball.ultimateFxTimer > 0) {
+        const t = Math.min(1, ball.ultimateFxTimer / 1.4);
+        const a = 0.18 + t * 0.42;
+        const color = ball.ultimateFxColor || ball.color;
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+
+        if (ball.ultimateFxStyle === 'shock') {
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.r + 22 + (1 - t) * 8, 0, Math.PI * 2);
+            ctx.lineWidth = 6;
+            ctx.globalAlpha = a;
+            ctx.stroke();
+        } else if (ball.ultimateFxStyle === 'nova') {
+            ctx.globalAlpha = a;
+            for (let i = 0; i < 6; i++) {
+                const ang = (i / 6) * Math.PI * 2 + ball.ultimateFxTimer * 3;
+                const px = Math.cos(ang) * (ball.r + 22);
+                const py = Math.sin(ang) * (ball.r + 22);
+                ctx.beginPath();
+                ctx.arc(px, py, 4 + t * 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (ball.ultimateFxStyle === 'swarm') {
+            ctx.globalAlpha = a;
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.r + 16, 0, Math.PI * 2);
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.r + 30, 0, Math.PI * 2);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        } else if (ball.ultimateFxStyle === 'lock') {
+            ctx.globalAlpha = a;
+            ctx.rotate(ball.ultimateFxTimer * 2.2);
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const ang = (i / 8) * Math.PI * 2;
+                const rr = ball.r + (i % 2 ? 18 : 28);
+                const px = Math.cos(ang) * rr;
+                const py = Math.sin(ang) * rr;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.rotate(-ball.ultimateFxTimer * 2.2);
+        } else if (ball.ultimateFxStyle === 'overdrive') {
+            ctx.globalAlpha = a;
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.r + 18, 0, Math.PI * 2);
+            ctx.lineWidth = 5;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.r + 30, 0, Math.PI * 2);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        ctx.globalAlpha = 1;
+    }
+
     if (ball.scytheVisual > 0) {
         ctx.save();
         ctx.rotate(ball.angle);

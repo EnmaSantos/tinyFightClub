@@ -48,6 +48,9 @@ export class Ball {
         this.ultimateCharge = 0;
         this.ultimateCooldown = 0;
         this.ultimateWindup = 0;
+        this.ultimateFxTimer = 0;
+        this.ultimateFxColor = this.color;
+        this.ultimateFxStyle = 'ring';
 
         this.behaviorState = 'AGGRESSIVE';
         this.behaviorTimer = 0;
@@ -121,21 +124,28 @@ export class Ball {
         this.ultimateCharge = Math.min(100, this.ultimateCharge + amount);
     }
 
+    triggerUltimateFx(style, color = this.color, duration = 1.2) {
+        this.ultimateFxStyle = style;
+        this.ultimateFxColor = color;
+        this.ultimateFxTimer = duration;
+    }
+
     applyPickup(type, enemy = null) {
+        const power = state.settings.pickupPower;
         if (type === 'damage') {
-            this.damageBuff = 7;
-            this.damageBuffMult = 1.35;
+            this.damageBuff = 6.5 + power * 1.5;
+            this.damageBuffMult = 1.25 + power * 0.12;
             emitter.emit('fx:text', { text: 'DAMAGE UP', x: this.x, y: this.y - this.r - 45, color: '#f97316' });
         } else if (type === 'haste') {
-            this.haste = 7;
-            this.hasteMult = 1.3;
+            this.haste = 6.5 + power * 1.5;
+            this.hasteMult = 1.2 + power * 0.1;
             emitter.emit('fx:text', { text: 'HASTE', x: this.x, y: this.y - this.r - 45, color: '#22d3ee' });
         } else if (type === 'fortify') {
-            this.fortify = 7;
-            this.fortifyMult = 0.72;
+            this.fortify = 6.5 + power * 1.5;
+            this.fortifyMult = Math.max(0.55, 0.8 - power * 0.08);
             emitter.emit('fx:text', { text: 'FORTIFY', x: this.x, y: this.y - this.r - 45, color: '#3b82f6' });
         } else if (type === 'heal') {
-            const heal = this.maxHp * 0.3;
+            const heal = this.maxHp * (0.22 + power * 0.08);
             this.hp = Math.min(this.maxHp, this.hp + heal);
             emitter.emit('fx:text', { text: 'MEGA HEAL', x: this.x, y: this.y - this.r - 45, color: '#10b981' });
         } else if (type === 'rocket') {
@@ -145,7 +155,7 @@ export class Ball {
                 const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
                 const px = this.x + Math.cos(angle) * (this.r + 14);
                 const py = this.y + Math.sin(angle) * (this.r + 14);
-                const rocket = new Projectile(px, py, enemy, this, angle, false, 20, 24);
+                const rocket = new Projectile(px, py, enemy, this, angle, false, 20, 20 + power * 6);
                 rocket.effect = 'rocket';
                 rocket.life = 1.8;
                 rocket.r = 9;
@@ -157,7 +167,7 @@ export class Ball {
     }
 
     tryUltimate(enemy, width, height, dist, dx, dy) {
-        if (this.ultimateCharge < 100 || this.ultimateCooldown > 0 || this.ultimateWindup > 0) return;
+        if (!state.settings.ultimateEnabled || this.ultimateCharge < 100 || this.ultimateCooldown > 0 || this.ultimateWindup > 0) return;
 
         this.ultimateCharge = 0;
         this.ultimateCooldown = 12;
@@ -166,6 +176,7 @@ export class Ball {
 
         const ability = this.ability;
         if (ability === 'Heavy') {
+            this.triggerUltimateFx('shock', '#94a3b8', 1.3);
             this.fortify = 5;
             this.fortifyMult = 0.6;
             enemy.takeDamage(this.scaleDamage(22), this);
@@ -173,6 +184,7 @@ export class Ball {
             enemy.vy += (dy / Math.max(1, dist)) * 28;
             emitter.emit('fx:text', { text: 'COLOSSUS IMPACT', x: this.x, y: this.y - this.r - 45, color: '#94a3b8' });
         } else if (ability === 'Missile' || ability === 'Laser' || ability === 'Brand') {
+            this.triggerUltimateFx('nova', ability === 'Brand' ? '#111827' : '#a855f7', 1.3);
             for (let i = -2; i <= 2; i++) {
                 const a = this.angle + i * 0.16;
                 const px = this.x + Math.cos(a) * (this.r + 10);
@@ -183,6 +195,7 @@ export class Ball {
             }
             emitter.emit('fx:text', { text: 'BARRAGE', x: this.x, y: this.y - this.r - 45, color: this.color });
         } else if (ability === 'Minion') {
+            this.triggerUltimateFx('swarm', '#a3e635', 1.4);
             for (let i = 0; i < 8; i++) {
                 const a = (i / 8) * Math.PI * 2;
                 const px = this.x + Math.cos(a) * (this.r + 10);
@@ -195,6 +208,7 @@ export class Ball {
             }
             emitter.emit('fx:text', { text: 'DRONE STORM', x: this.x, y: this.y - this.r - 45, color: '#a3e635' });
         } else if (ability === 'Trap' || ability === 'Pulse' || ability === 'Reflect') {
+            this.triggerUltimateFx('lock', this.color, 1.25);
             for (let i = 0; i < 4; i++) {
                 const a = (i / 4) * Math.PI * 2;
                 state.hazards.push(new Hazard(this.x + Math.cos(a) * 60, this.y + Math.sin(a) * 60, this));
@@ -202,6 +216,7 @@ export class Ball {
             enemy.takeDamage(this.scaleDamage(12), this);
             emitter.emit('fx:text', { text: 'ARENA LOCK', x: this.x, y: this.y - this.r - 45, color: this.color });
         } else {
+            this.triggerUltimateFx('overdrive', this.color, 1.4);
             this.damageBuff = 5;
             this.damageBuffMult = 1.55;
             this.haste = 5;
@@ -239,8 +254,9 @@ export class Ball {
         }
 
         this.flash = 0.083;
-        if (source) source.addUltimateCharge(Math.max(2, effectiveAmount * 0.15));
-        this.addUltimateCharge(Math.max(1, effectiveAmount * 0.08));
+        const ultRate = state.settings.ultimateChargeRate;
+        if (source) source.addUltimateCharge(Math.max(2, effectiveAmount * 0.15) * ultRate);
+        this.addUltimateCharge(Math.max(1, effectiveAmount * 0.08) * ultRate);
         emitter.emit('ball:hit', { defender: this, attacker: source, damage: effectiveAmount, isReflect });
     }
 
@@ -262,6 +278,7 @@ export class Ball {
         if (this.scytheVisual  > 0) this.scytheVisual  -= dt;
         if (this.ultimateCooldown > 0) this.ultimateCooldown -= dt;
         if (this.ultimateWindup > 0) this.ultimateWindup -= dt;
+        if (this.ultimateFxTimer > 0) this.ultimateFxTimer -= dt;
 
         if (this.damageBuff > 0) this.damageBuff -= dt;
         else this.damageBuffMult = 1;
@@ -270,7 +287,7 @@ export class Ball {
         if (this.fortify > 0) this.fortify -= dt;
         else this.fortifyMult = 1;
 
-        this.addUltimateCharge(dt * 2.2);
+        this.addUltimateCharge(dt * 2.2 * state.settings.ultimateChargeRate);
 
         if (this.poisoned > 0) {
             this.poisoned        -= dt;
@@ -790,11 +807,12 @@ export class Pickup {
 }
 
 export class ArenaEffect {
-    constructor(kind, x, y, power = 1) {
+    constructor(kind, x, y, power = 1, damage = 12) {
         this.kind = kind;
         this.x = x;
         this.y = y;
         this.power = power;
+        this.damage = damage;
         this.life = kind === 'strike' ? 1.6 : 1.2;
         this.active = true;
         this.triggered = false;
@@ -813,7 +831,7 @@ export class ArenaEffect {
             const hit = (ball) => {
                 const dist = Math.hypot(ball.x - this.x, ball.y - this.y);
                 if (dist < this.r + ball.r) {
-                    ball.takeDamage(14 * this.power, null);
+                    ball.takeDamage(this.damage * this.power, null);
                     const pushX = (ball.x - this.x) / Math.max(1, dist);
                     const pushY = (ball.y - this.y) / Math.max(1, dist);
                     ball.vx += pushX * 18 * this.power;

@@ -11,7 +11,7 @@ import {
     drawGrappleLine, drawArenaBorder, drawConfetti
 } from './renderer.js';
 // ui.js: imported for side-effects (event subscriptions) + direct overlay/render calls
-import { showOverlay, hideOverlay, renderBracket, renderRoster } from './ui.js';
+import { showOverlay, hideOverlay, renderBracket, renderRoster, initArenaControls } from './ui.js';
 
 // Record each match result to the backend — fire-and-forget, never throws.
 emitter.on('match:end', async ({ winner, loser, round, duration }) => {
@@ -139,15 +139,21 @@ function spawnRandomPickup() {
 function updateEnvironment(dt) {
     const F = dt * 60;
     const env = state.env;
+    const settings = state.settings;
+
+    if (!settings.envEnabled) {
+        env.windStrength = 0;
+        return;
+    }
 
     env.windTimer -= dt;
     env.strikeTimer -= dt;
-    env.pickupTimer -= dt;
+    if (settings.itemsEnabled) env.pickupTimer -= dt;
 
     if (env.windTimer <= 0) {
         env.windTimer = 5 + Math.random() * 5;
         env.windAngle = Math.random() * Math.PI * 2;
-        env.windStrength = 0.9 + Math.random() * 1.5;
+        env.windStrength = (0.9 + Math.random() * 1.5) * settings.envIntensity;
         emitter.emit('fx:text', { text: 'GUST!', x: VIRTUAL_W / 2, y: 80, color: '#38bdf8' });
     }
 
@@ -156,18 +162,18 @@ function updateEnvironment(dt) {
         const margin = 120;
         const x = margin + Math.random() * (VIRTUAL_W - margin * 2);
         const y = margin + Math.random() * (VIRTUAL_H - margin * 2);
-        state.arenaEffects.push(new ArenaEffect('strike', x, y, 1));
+        state.arenaEffects.push(new ArenaEffect('strike', x, y, settings.envIntensity, settings.strikeDamage));
     }
 
-    if (env.pickupTimer <= 0 && state.pickups.length < 3) {
-        env.pickupTimer = 5 + Math.random() * 4;
+    if (settings.itemsEnabled && env.pickupTimer <= 0 && state.pickups.length < settings.maxActivePickups) {
+        env.pickupTimer = (5 + Math.random() * 4) / Math.max(0.25, settings.pickupRate);
         spawnRandomPickup();
     }
 
     env.windStrength *= Math.pow(0.987, F);
     if (env.windStrength > 0.02) {
-        const wx = Math.cos(env.windAngle) * 0.07 * env.windStrength * F;
-        const wy = Math.sin(env.windAngle) * 0.07 * env.windStrength * F;
+        const wx = Math.cos(env.windAngle) * 0.07 * env.windStrength * settings.windPushScale * F;
+        const wy = Math.sin(env.windAngle) * 0.07 * env.windStrength * settings.windPushScale * F;
         state.ball1.vx += wx;
         state.ball1.vy += wy;
         state.ball2.vx += wx;
@@ -301,6 +307,9 @@ function gameLoop(timestamp) {
     const { scale, offsetX, offsetY } = getViewport();
 
     if (state.gameState === 'FIGHTING') {
+        if (!state.settings.itemsEnabled) state.pickups = [];
+        if (!state.settings.envEnabled) state.arenaEffects = [];
+
         // Update
         updateEnvironment(dt);
         state.ball1.update(state.ball2, VIRTUAL_W, VIRTUAL_H, dt);
@@ -438,6 +447,7 @@ window.onload = () => {
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+    initArenaControls();
 
     initTournament();
     then = performance.now();
