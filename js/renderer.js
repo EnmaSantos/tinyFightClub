@@ -42,6 +42,23 @@ export function drawBall(ctx, ball) {
         ctx.stroke();
     }
 
+    if (ball.windWall > 0) {
+        ctx.beginPath();
+        ctx.arc(0, 0, ball.r + 14, -0.9, 0.9);
+        ctx.strokeStyle = `rgba(96, 165, 250, ${Math.min(0.8, ball.windWall)})`;
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    }
+
+    if (ball.bloodFrenzy > 0) {
+        ctx.beginPath();
+        ctx.arc(0, 0, ball.r + 12, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(220, 38, 38, ${Math.min(0.7, ball.bloodFrenzy / 3)})`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+    }
+
     if (ball.ultimateFxTimer > 0) {
         const t = Math.min(1, ball.ultimateFxTimer / 1.4);
         const a = 0.18 + t * 0.42;
@@ -118,6 +135,28 @@ export function drawBall(ctx, ball) {
         ctx.restore();
     }
 
+    if (ball.slashVisual > 0) {
+        ctx.save();
+        ctx.rotate(ball.angle);
+        ctx.beginPath();
+        ctx.arc(0, 0, ball.r + 30, -0.65, 0.65);
+        ctx.strokeStyle = `rgba(248, 250, 252, ${Math.min(1, ball.slashVisual * 3)})`;
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    if (ball.punchVisual > 0) {
+        ctx.save();
+        ctx.rotate(ball.angle);
+        ctx.fillStyle = `rgba(236, 72, 153, ${Math.min(0.8, ball.punchVisual * 3)})`;
+        ctx.beginPath();
+        ctx.ellipse(ball.r + 18, 0, 26, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
     ctx.rotate(ball.angle);
     ctx.beginPath();
     ctx.moveTo(Math.cos(-Math.PI / 3) * ball.r, Math.sin(-Math.PI / 3) * ball.r);
@@ -152,6 +191,12 @@ export function drawBall(ctx, ball) {
         ctx.fillStyle = '#3b82f6';
         const shieldPct = Math.min(1, ball.shield / 50);
         ctx.fillRect(ball.x - barW / 2, ball.y - ball.r - 24, barW * shieldPct, 3);
+    }
+
+    if (ball.grit > 0) {
+        ctx.fillStyle = '#fb7185';
+        const gritPct = Math.min(1, ball.grit / 36);
+        ctx.fillRect(ball.x - barW / 2, ball.y - ball.r - 20, barW * gritPct, 3);
     }
 
     const ultPct = Math.max(0, Math.min(1, ball.ultimateCharge / 100));

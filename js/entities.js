@@ -51,6 +51,12 @@ export class Ball {
         this.ultimateFxTimer = 0;
         this.ultimateFxColor = this.color;
         this.ultimateFxStyle = 'ring';
+        this.grit = 0;
+        this.windWall = 0;
+        this.bloodFrenzy = 0;
+        this.punchVisual = 0;
+        this.slashVisual = 0;
+        this.regenTickTimer = 0;
 
         this.behaviorState = 'AGGRESSIVE';
         this.behaviorTimer = 0;
@@ -175,15 +181,17 @@ export class Ball {
         emitter.emit('ability:used', { ball: this, ability: 'ULTIMATE', x: this.x, y: this.y });
 
         const ability = this.ability;
-        if (ability === 'Heavy') {
+        if (ability === 'Heavy' || ability === 'Gauntlet' || ability === 'Haymaker') {
             this.triggerUltimateFx('shock', '#94a3b8', 1.3);
             this.fortify = 5;
             this.fortifyMult = 0.6;
-            enemy.takeDamage(this.scaleDamage(22), this);
+            const burst = ability === 'Haymaker' ? 20 + Math.min(30, this.grit) : 22;
+            enemy.takeDamage(this.scaleDamage(burst), this);
             enemy.vx += (dx / Math.max(1, dist)) * 28;
             enemy.vy += (dy / Math.max(1, dist)) * 28;
-            emitter.emit('fx:text', { text: 'COLOSSUS IMPACT', x: this.x, y: this.y - this.r - 45, color: '#94a3b8' });
-        } else if (ability === 'Missile' || ability === 'Laser' || ability === 'Brand') {
+            this.grit = 0;
+            emitter.emit('fx:text', { text: ability === 'Heavy' ? 'COLOSSUS IMPACT' : 'HAYMAKER', x: this.x, y: this.y - this.r - 45, color: '#94a3b8' });
+        } else if (ability === 'Missile' || ability === 'Laser' || ability === 'Brand' || ability === 'Headshot' || ability === 'Fishbones') {
             this.triggerUltimateFx('nova', ability === 'Brand' ? '#111827' : '#a855f7', 1.3);
             for (let i = -2; i <= 2; i++) {
                 const a = this.angle + i * 0.16;
@@ -191,9 +199,31 @@ export class Ball {
                 const py = this.y + Math.sin(a) * (this.r + 10);
                 const p = new Projectile(px, py, enemy, this, a, true, 10, this.scaleDamage(9));
                 p.effect = ability === 'Brand' ? 'brand' : null;
+                if (ability === 'Fishbones') p.effect = 'rocket';
+                if (ability === 'Headshot') p.effect = 'headshot';
                 state.projectiles.push(p);
             }
             emitter.emit('fx:text', { text: 'BARRAGE', x: this.x, y: this.y - this.r - 45, color: this.color });
+        } else if (ability === 'Soulbound' || ability === 'Windblade') {
+            this.triggerUltimateFx('nova', ability === 'Windblade' ? '#60a5fa' : '#f8fafc', 1.35);
+            for (let i = 0; i < 6; i++) {
+                const a = (i / 6) * Math.PI * 2;
+                const px = this.x + Math.cos(a) * (this.r + 10);
+                const py = this.y + Math.sin(a) * (this.r + 10);
+                const p = new Projectile(px, py, enemy, this, a, false, 15, this.scaleDamage(10));
+                p.effect = 'wind';
+                p.life = 1.2;
+                p.r = 12;
+                state.projectiles.push(p);
+            }
+            this.slashVisual = 0.6;
+            emitter.emit('fx:text', { text: 'TEMPEST SLASH', x: this.x, y: this.y - this.r - 45, color: this.color });
+        } else if (ability === 'Bloodhunt' || ability === 'Regen' || ability === 'Ravenous') {
+            this.triggerUltimateFx('swarm', ability === 'Bloodhunt' ? '#dc2626' : this.color, 1.5);
+            enemy.takeDamage(this.scaleDamage(16), this);
+            this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.22);
+            this.bloodFrenzy = ability === 'Bloodhunt' ? 4 : this.bloodFrenzy;
+            emitter.emit('fx:text', { text: ability === 'Ravenous' ? 'DEMON DRAIN' : 'UNSTOPPABLE', x: this.x, y: this.y - this.r - 45, color: this.color });
         } else if (ability === 'Minion') {
             this.triggerUltimateFx('swarm', '#a3e635', 1.4);
             for (let i = 0; i < 8; i++) {
@@ -247,6 +277,16 @@ export class Ball {
             emitter.emit('fx:text', { text: '+HP', x: source.x, y: source.y - source.r - 45, color: '#10b981' });
         }
 
+        if (source && source.ability === 'Bloodhunt' && !isReflect && this.hp > 0) {
+            const lowHpBonus = this.hp / this.maxHp < 0.5 ? 0.45 : 0.25;
+            source.hp = Math.min(source.maxHp, source.hp + effectiveAmount * lowHpBonus);
+            emitter.emit('fx:text', { text: '+BLOOD', x: source.x, y: source.y - source.r - 45, color: '#dc2626' });
+        }
+
+        if (this.ability === 'Haymaker' && !isReflect) {
+            this.grit = Math.min(36, this.grit + effectiveAmount * 0.65);
+        }
+
         if (this.ability === 'Reflect' && source && !isReflect && this.hp > 0) {
             const reflected = effectiveAmount * 0.4;
             source.takeDamage(reflected, this, true);
@@ -279,6 +319,10 @@ export class Ball {
         if (this.ultimateCooldown > 0) this.ultimateCooldown -= dt;
         if (this.ultimateWindup > 0) this.ultimateWindup -= dt;
         if (this.ultimateFxTimer > 0) this.ultimateFxTimer -= dt;
+        if (this.windWall > 0) this.windWall -= dt;
+        if (this.bloodFrenzy > 0) this.bloodFrenzy -= dt;
+        if (this.punchVisual > 0) this.punchVisual -= dt;
+        if (this.slashVisual > 0) this.slashVisual -= dt;
 
         if (this.damageBuff > 0) this.damageBuff -= dt;
         else this.damageBuffMult = 1;
@@ -288,6 +332,19 @@ export class Ball {
         else this.fortifyMult = 1;
 
         this.addUltimateCharge(dt * 2.2 * state.settings.ultimateChargeRate);
+
+        if (this.ability === 'Regen' && this.hp > 0 && this.hp < this.maxHp) {
+            this.regenTickTimer += dt;
+            if (this.regenTickTimer >= 0.5) {
+                this.regenTickTimer -= 0.5;
+                this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.012);
+                if (Math.random() < 0.45) {
+                    emitter.emit('fx:particles', { x: this.x, y: this.y, color: '#a78bfa', count: 2, speed: 0.8, size: 2 });
+                }
+            }
+        } else {
+            this.regenTickTimer = 0;
+        }
 
         if (this.poisoned > 0) {
             this.poisoned        -= dt;
@@ -340,14 +397,22 @@ export class Ball {
                 const enemyHpRatio = enemy.hp / enemy.maxHp;
                 const abilityReady = this.abilityCooldown <= 0.5;
 
-                if (this.ability === 'Laser') {
+                if (this.ability === 'Laser' || this.ability === 'Headshot') {
                     this.behaviorState = abilityReady ? 'SNIPING' : ((dist < 350) ? 'RETREATING' : 'FLANKING');
-                } else if (this.ability === 'Missile') {
+                } else if (this.ability === 'Missile' || this.ability === 'Fishbones') {
                     this.behaviorState = (dist < 350) ? 'RETREATING' : 'FLANKING';
                 } else if (this.ability === 'Trap') {
                     this.behaviorState = 'FLANKING';
                 } else if (this.ability === 'Minion') {
                     this.behaviorState = (dist < 200) ? 'RETREATING' : 'FLANKING';
+                } else if (this.ability === 'Windblade') {
+                    this.behaviorState = abilityReady ? (dist < 220 ? 'RETREATING' : 'SNIPING') : 'FLANKING';
+                } else if (this.ability === 'Ravenous') {
+                    this.behaviorState = dist < 260 ? 'RETREATING' : (abilityReady ? 'SNIPING' : 'FLANKING');
+                } else if (this.ability === 'Soulbound' || this.ability === 'Gauntlet' || this.ability === 'Bloodhunt' || this.ability === 'Haymaker') {
+                    this.behaviorState = 'AGGRESSIVE';
+                } else if (this.ability === 'Regen') {
+                    this.behaviorState = hpRatio < 0.35 && dist < 240 ? 'RETREATING' : 'AGGRESSIVE';
                 } else if (this.ability === 'Boomerang') {
                     if (abilityReady) {
                         this.behaviorState = dist > 650 ? 'AGGRESSIVE' : (dist < 240 ? 'RETREATING' : 'AGGRESSIVE');
@@ -438,6 +503,8 @@ export class Ball {
             let activeSpeed = this.speed;
             if (this.ability === 'Berserk') activeSpeed *= 1 + ((this.maxHp - this.hp) / this.maxHp) * 0.3;
             if (this.ability === 'Last Stand') activeSpeed *= 1 + (this.getLastStandScale().damageBonus * 0.2);
+            if (this.ability === 'Bloodhunt' && enemy.hp / enemy.maxHp < 0.5) activeSpeed *= 1.35;
+            if (this.bloodFrenzy > 0) activeSpeed *= 1.2;
             activeSpeed *= this.hasteMult;
 
             const angleDiff = normalizeAngle(targetAngle - this.angle);
@@ -513,6 +580,128 @@ export class Ball {
                 this.shield          = 50;
                 this.abilityCooldown = 7.0;
                 emitter.emit('ability:used', { ball: this, ability: 'Shield', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Soulbound' && dist < 480 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 0.45) {
+                const nx = dx / Math.max(1, dist);
+                const ny = dy / Math.max(1, dist);
+                this.vx += nx * 18;
+                this.vy += ny * 18;
+                this.intangible = 0.22;
+                this.slashVisual = 0.35;
+                if (dist < this.r + enemy.r + 190 && enemy.intangible <= 0) {
+                    enemy.takeDamage(this.scaleDamage(12), this);
+                    setTimeout(() => {
+                        if (state.gameState === 'FIGHTING' && enemy.hp > 0) enemy.takeDamage(this.scaleDamage(7), this);
+                    }, 450);
+                }
+                this.abilityCooldown = 2.6;
+                emitter.emit('ability:used', { ball: this, ability: 'Soulbound', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Windblade' && dist < 720 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 0.35) {
+                const px = this.x + Math.cos(this.angle) * (this.r + 12);
+                const py = this.y + Math.sin(this.angle) * (this.r + 12);
+                const p = new Projectile(px, py, enemy, this, this.angle, false, 16, this.scaleDamage(11));
+                p.effect = 'wind';
+                p.r = 13;
+                p.life = 1.2;
+                state.projectiles.push(p);
+                this.windWall = 0.8;
+                this.abilityCooldown = 1.6;
+                emitter.emit('ability:used', { ball: this, ability: 'Windblade', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Bloodhunt' && dist < 500) {
+                const nx = dx / Math.max(1, dist);
+                const ny = dy / Math.max(1, dist);
+                this.vx += nx * 15;
+                this.vy += ny * 15;
+                this.bloodFrenzy = 2.2;
+                if (dist < this.r + enemy.r + 120 && enemy.intangible <= 0) {
+                    enemy.takeDamage(this.scaleDamage(enemy.hp / enemy.maxHp < 0.5 ? 15 : 10), this);
+                }
+                this.abilityCooldown = 2.2;
+                emitter.emit('ability:used', { ball: this, ability: 'Bloodhunt', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Headshot' && dist < 760 && Math.abs(normalizeAngle(this.angle - laserLeadAngle)) < 0.14) {
+                const px = this.x + Math.cos(laserLeadAngle) * (this.r + 12);
+                const py = this.y + Math.sin(laserLeadAngle) * (this.r + 12);
+                const p = new Projectile(px, py, enemy, this, laserLeadAngle, false, 22, this.scaleDamage(21));
+                p.effect = 'headshot';
+                p.r = 5;
+                p.life = 1.25;
+                state.projectiles.push(p);
+                this.behaviorState = 'RETREATING';
+                this.behaviorTimer = 0.8;
+                this.abilityCooldown = 2.5;
+                emitter.emit('ability:used', { ball: this, ability: 'Headshot', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Gauntlet' && dist < 360 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 0.5 && enemy.intangible <= 0) {
+                const nx = dx / Math.max(1, dist);
+                const ny = dy / Math.max(1, dist);
+                this.vx += nx * 12;
+                this.vy += ny * 12;
+                enemy.takeDamage(this.scaleDamage(16), this);
+                enemy.vx += nx * 22;
+                enemy.vy += ny * 22;
+                this.punchVisual = 0.28;
+                this.abilityCooldown = 2.3;
+                emitter.emit('ability:used', { ball: this, ability: 'Gauntlet', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Regen' && dist < 560 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 0.45) {
+                const px = this.x + Math.cos(this.angle) * (this.r + 12);
+                const py = this.y + Math.sin(this.angle) * (this.r + 12);
+                const p = new Projectile(px, py, enemy, this, this.angle, true, 7.5, this.scaleDamage(10));
+                p.effect = 'cleaver';
+                p.r = 12;
+                p.life = 2.6;
+                state.projectiles.push(p);
+                this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.04);
+                this.abilityCooldown = 2.6;
+                emitter.emit('ability:used', { ball: this, ability: 'Regen', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Fishbones' && dist < 700) {
+                for (let i = -1; i <= 1; i++) {
+                    const a = Math.atan2(dy, dx) + i * 0.18 + (Math.random() - 0.5) * 0.08;
+                    const px = this.x + Math.cos(a) * (this.r + 12);
+                    const py = this.y + Math.sin(a) * (this.r + 12);
+                    const p = new Projectile(px, py, enemy, this, a, false, 14, this.scaleDamage(12));
+                    p.effect = 'rocket';
+                    p.r = 8;
+                    p.life = 1.55;
+                    state.projectiles.push(p);
+                }
+                this.abilityCooldown = 2.4;
+                emitter.emit('ability:used', { ball: this, ability: 'Fishbones', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Ravenous' && dist < 660) {
+                if (dist < this.r + enemy.r + 150 && enemy.intangible <= 0) {
+                    enemy.takeDamage(this.scaleDamage(9), this);
+                    this.hp = Math.min(this.maxHp, this.hp + 7);
+                    this.abilityCooldown = 1.7;
+                } else if (dist < 660) {
+                    const px = this.x + Math.cos(this.angle) * (this.r + 12);
+                    const py = this.y + Math.sin(this.angle) * (this.r + 12);
+                    const p = new Projectile(px, py, enemy, this, this.angle, true, 8, this.scaleDamage(8));
+                    p.effect = 'raven';
+                    p.r = 10;
+                    p.life = 2.8;
+                    state.projectiles.push(p);
+                    this.abilityCooldown = 1.9;
+                }
+                emitter.emit('ability:used', { ball: this, ability: 'Ravenous', x: this.x, y: this.y });
+
+            } else if (this.ability === 'Haymaker' && dist < this.r + enemy.r + 150 && enemy.intangible <= 0) {
+                const nx = dx / Math.max(1, dist);
+                const ny = dy / Math.max(1, dist);
+                const gritDamage = Math.min(24, this.grit * 0.8);
+                enemy.takeDamage(this.scaleDamage(10 + gritDamage), this);
+                enemy.vx += nx * (18 + gritDamage * 0.35);
+                enemy.vy += ny * (18 + gritDamage * 0.35);
+                this.fortify = 2.2;
+                this.fortifyMult = 0.7;
+                this.grit = 0;
+                this.punchVisual = 0.36;
+                this.abilityCooldown = 3.1;
+                emitter.emit('ability:used', { ball: this, ability: 'Haymaker', x: this.x, y: this.y });
 
             } else if (this.ability === 'Boomerang' && dist < 720 && Math.abs(normalizeAngle(this.angle - Math.atan2(dy, dx))) < 0.45) {
                 const leadFrames = Math.min(24, dist / 16);
@@ -667,6 +856,19 @@ export class Projectile {
             } else if (this.effect === 'rocket') {
                 emitter.emit('fx:text', { text: 'BOOM!', x: this.target.x, y: this.target.y - this.target.r - 45, color: '#f59e0b' });
                 emitter.emit('fx:particles', { x: this.target.x, y: this.target.y, color: '#f59e0b', count: 26, speed: 6, size: 4 });
+            } else if (this.effect === 'wind') {
+                const push = Math.hypot(this.vx, this.vy) || 1;
+                this.target.vx += (this.vx / push) * 12;
+                this.target.vy += (this.vy / push) * 12;
+                emitter.emit('fx:particles', { x: this.x, y: this.y, color: '#60a5fa', count: 14, speed: 4, size: 3 });
+            } else if (this.effect === 'cleaver') {
+                this.source.hp = Math.min(this.source.maxHp, this.source.hp + 5);
+                emitter.emit('fx:text', { text: '+REGEN', x: this.source.x, y: this.source.y - this.source.r - 45, color: '#a78bfa' });
+            } else if (this.effect === 'raven') {
+                this.source.hp = Math.min(this.source.maxHp, this.source.hp + 6);
+                emitter.emit('fx:text', { text: '+DRAIN', x: this.source.x, y: this.source.y - this.source.r - 45, color: '#991b1b' });
+            } else if (this.effect === 'headshot') {
+                emitter.emit('fx:text', { text: 'HEADSHOT', x: this.target.x, y: this.target.y - this.target.r - 45, color: '#38bdf8' });
             }
             this.active = false;
             emitter.emit('fx:particles', { x: this.x, y: this.y, color: this.color, count: 12, speed: 3 });

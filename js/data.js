@@ -18,5 +18,14 @@ export const baseBalls = [
     { name: 'Razor',   color: '#f59e0b', ability: 'Boomerang', hp: 114, maxHp: 114, r: 60, mass: 1.1, speed: 3.8, damage: 9,  desc: 'Throws a curved blade that can hit on the way out and back.' },
     { name: 'Malik',   color: '#111827', ability: 'Brand',     hp: 110, maxHp: 110, r: 60, mass: 1.0, speed: 3.6, damage: 9,  desc: 'Black flame hits permanently reduce the enemy max HP.' },
     { name: 'Enma',    color: '#dc2626', ability: 'Scythe',    hp: 112, maxHp: 112, r: 61, mass: 1.1, speed: 3.9, damage: 10, desc: 'Wide melee hits steal max HP and grow stronger over time.' },
-    { name: 'Vanta',   color: '#312e81', ability: 'Last Stand',hp: 124, maxHp: 124, r: 64, mass: 1.4, speed: 3.1, damage: 9,  desc: 'Gains damage and damage reduction as HP gets lower.' }
+    { name: 'Vanta',   color: '#312e81', ability: 'Last Stand',hp: 124, maxHp: 124, r: 64, mass: 1.4, speed: 3.1, damage: 9,  desc: 'Gains damage and damage reduction as HP gets lower.' },
+    { name: 'Yone',    color: '#f8fafc', ability: 'Soulbound', hp: 108, maxHp: 108, r: 59, mass: 1.0, speed: 4.2, damage: 10, desc: 'Dashes through enemies with a delayed spirit slash.' },
+    { name: 'Yasuo',   color: '#60a5fa', ability: 'Windblade', hp: 104, maxHp: 104, r: 58, mass: 1.0, speed: 4.4, damage: 9,  desc: 'Throws cutting wind and excels while circling at mid range.' },
+    { name: 'Warwick', color: '#7f1d1d', ability: 'Bloodhunt', hp: 122, maxHp: 122, r: 64, mass: 1.4, speed: 3.8, damage: 10, desc: 'Gets faster and heals when hunting wounded opponents.' },
+    { name: 'Caitlyn', color: '#38bdf8', ability: 'Headshot',  hp: 92,  maxHp: 92,  r: 53, mass: 0.8, speed: 4.0, damage: 8,  desc: 'Keeps distance and fires high-damage precision shots.' },
+    { name: 'Vi',      color: '#ec4899', ability: 'Gauntlet',  hp: 118, maxHp: 118, r: 62, mass: 1.3, speed: 3.6, damage: 10, desc: 'Charges in with heavy gauntlet punches and knockback.' },
+    { name: 'Dr Mundo',color: '#a78bfa', ability: 'Regen',     hp: 150, maxHp: 150, r: 70, mass: 1.8, speed: 2.8, damage: 8,  desc: 'Regenerates over time and throws heavy cleavers.' },
+    { name: 'Jinx',    color: '#f472b6', ability: 'Fishbones', hp: 96,  maxHp: 96,  r: 55, mass: 0.9, speed: 4.1, damage: 8,  desc: 'Fires unstable rocket salvos with splashy burst damage.' },
+    { name: 'Swain',   color: '#991b1b', ability: 'Ravenous',  hp: 128, maxHp: 128, r: 64, mass: 1.4, speed: 3.1, damage: 9,  desc: 'Drains nearby enemies and sends ravens after targets.' },
+    { name: 'Sett',    color: '#fb7185', ability: 'Haymaker',  hp: 134, maxHp: 134, r: 66, mass: 1.6, speed: 3.2, damage: 10, desc: 'Stores damage taken as grit, then releases a massive punch.' }
 ];

@@ -4,7 +4,8 @@ import { kv } from '@vercel/kv';
 const FIGHTER_NAMES = [
     'Dash', 'Titan', 'Dracula', 'Ninja', 'Zerk', 'Paladin', 'Venom', 'Mage',
     'Spike', 'Sniper', 'Hook', 'Ghost', 'Pulsar', 'Swarm', 'Thorn', 'Comet',
-    'Razor', 'Malik', 'Enma', 'Vanta'
+    'Razor', 'Malik', 'Enma', 'Vanta', 'Yone', 'Yasuo', 'Warwick', 'Caitlyn',
+    'Vi', 'Dr Mundo', 'Jinx', 'Swain', 'Sett'
 ];
 
 export default async function handler(req, res) {
